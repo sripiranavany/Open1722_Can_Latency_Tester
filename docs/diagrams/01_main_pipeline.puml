@@ -1,0 +1,79 @@
+@startuml Main Round-Trip Measurement Pipeline
+
+title Round-Trip CAN Latency Measurement Pipeline
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Monospaced
+skinparam defaultFontSize 11
+skinparam backgroundColor white
+skinparam ArrowColor #444441
+skinparam ArrowThickness 1.5
+
+skinparam component {
+    BackgroundColor<<stm32>> #EEEDFE
+    BorderColor<<stm32>> #534AB7
+    FontColor<<stm32>> #26215C
+
+    BackgroundColor<<rpi>> #E1F5EE
+    BorderColor<<rpi>> #0F6E56
+    FontColor<<rpi>> #04342C
+
+    BackgroundColor<<transceiver>> #F1EFE8
+    BorderColor<<transceiver>> #5F5E5A
+    FontColor<<transceiver>> #2C2C2A
+
+    BackgroundColor<<bus>> #FAEEDA
+    BorderColor<<bus>> #BA7517
+    FontColor<<bus>> #412402
+
+    BackgroundColor<<ethernet>> #E1F5EE
+    BorderColor<<ethernet>> #0F6E56
+    FontColor<<ethernet>> #04342C
+}
+
+'--- STM32 Source ---
+package "STM32 F439ZI  (Zephyr RTOS)" <<stm32>> {
+    component [CAN1 TX\nPD1 (CN9-8)\nt₀: send frame] as CAN1_TX <<stm32>>
+    component [CAN2 RX\nPB5 (CN7-13)\nt₃: receive frame] as CAN2_RX <<stm32>>
+    note bottom of CAN1_TX
+        **Latency = t₃ - t₀**
+        Measured entirely on STM32
+        No clock sync required
+    end note
+}
+
+'--- Transceivers ---
+component [Transceiver 1\nSN65HVD230\n3.3V] as TR1 <<transceiver>>
+component [Transceiver 2\nSN65HVD230\n3.3V] as TR2 <<transceiver>>
+
+'--- CAN Buses ---
+component [CAN Bus A\n250 kbps\n120Ω termination] as BUSA <<bus>>
+component [CAN Bus B\n250 kbps\n120Ω termination] as BUSB <<bus>>
+
+'--- Raspberry Pis ---
+package "Raspberry Pi 1  (Linux)" <<rpi>> {
+    component [CAN HAT\nt₁: receive] as RPI1CAN <<rpi>>
+    component [Open1722\nEncapsulate\nCAN → IEEE-1722] as RPI1ETH <<rpi>>
+}
+
+package "Raspberry Pi 2  (Linux)" <<rpi>> {
+    component [Open1722\nDecapsulate\nIEEE-1722 → CAN] as RPI2ETH <<rpi>>
+    component [CAN HAT\nt₂: send] as RPI2CAN <<rpi>>
+}
+
+'--- Ethernet ---
+component [Direct Ethernet Cable\nIEEE-1722 / AVTP\n192.168.10.1 ↔ 192.168.10.2] as ETH <<ethernet>>
+
+'--- Flow ---
+CAN1_TX --> TR1 : TX
+TR1 --> BUSA : CANH/CANL
+BUSA --> RPI1CAN : CANH/CANL
+RPI1CAN --> RPI1ETH : CAN frame
+RPI1ETH --> ETH : UDP + IEEE-1722
+ETH --> RPI2ETH : UDP + IEEE-1722
+RPI2ETH --> RPI2CAN : CAN frame
+RPI2CAN --> BUSB : CANH/CANL
+BUSB --> TR2 : CANH/CANL
+TR2 --> CAN2_RX : RX
+
+@enduml

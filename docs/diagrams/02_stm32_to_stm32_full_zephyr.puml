@@ -1,0 +1,70 @@
+@startuml STM32 to STM32 Full Zephyr Pipeline
+
+title STM32 → STM32 → STM32 (All Zephyr RTOS)
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Monospaced
+skinparam defaultFontSize 11
+skinparam backgroundColor white
+skinparam ArrowColor #444441
+skinparam ArrowThickness 1.5
+
+skinparam component {
+    BackgroundColor<<stm32>> #EEEDFE
+    BorderColor<<stm32>> #534AB7
+    FontColor<<stm32>> #26215C
+
+    BackgroundColor<<ethernet>> #E1F5EE
+    BorderColor<<ethernet>> #0F6E56
+    FontColor<<ethernet>> #04342C
+
+    BackgroundColor<<bus>> #FAEEDA
+    BorderColor<<bus>> #BA7517
+    FontColor<<bus>> #412402
+}
+
+'--- STM32 #1 (Source) ---
+package "STM32 #1\n(Zephyr RTOS)" <<stm32>> {
+    component [CAN1 TX\nt₀: send] as STM1_TX <<stm32>>
+    component [CAN2 RX\nt₃: receive] as STM1_RX <<stm32>>
+}
+
+'--- STM32 #2 (Gateway 1) ---
+package "STM32 #2\n(Zephyr RTOS)" <<stm32>> {
+    component [CAN1 RX] as STM2_CAN <<stm32>>
+    component [Zephyr Open1722\nEncapsulate] as STM2_ENC <<stm32>>
+    component [Ethernet TX\n+ LAN8720 PHY] as STM2_ETH <<stm32>>
+}
+
+'--- STM32 #3 (Gateway 2) ---
+package "STM32 #3\n(Zephyr RTOS)" <<stm32>> {
+    component [Ethernet RX\n+ LAN8720 PHY] as STM3_ETH <<stm32>>
+    component [Zephyr Open1722\nDecapsulate] as STM3_DEC <<stm32>>
+    component [CAN2 TX] as STM3_CAN <<stm32>>
+}
+
+'--- Buses ---
+component [CAN Bus A\n250 kbps] as CANA <<bus>>
+component [CAN Bus B\n250 kbps] as CANB <<bus>>
+component [Ethernet\nDirect Cable\nIEEE-1722] as ETH <<ethernet>>
+
+'--- Flow ---
+STM1_TX --> CANA : t₀
+CANA --> STM2_CAN
+STM2_CAN --> STM2_ENC
+STM2_ENC --> STM2_ETH
+STM2_ETH --> ETH : IEEE-1722\nAVTP
+ETH --> STM3_ETH
+STM3_ETH --> STM3_DEC
+STM3_DEC --> STM3_CAN
+STM3_CAN --> CANB
+CANB --> STM1_RX : t₃
+
+note bottom of STM1_TX
+    **Pure RTOS Environment**
+    No Linux scheduler jitter
+    Expected: 30-50% latency reduction
+    Requires: 3× STM32F439ZI + 2× LAN8720
+end note
+
+@enduml

@@ -1,0 +1,74 @@
+@startuml Hybrid STM32 Raspberry Pi Configuration
+
+title Hybrid: STM32 → Raspberry Pi → STM32 (Zephyr + Linux + Zephyr)
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Monospaced
+skinparam defaultFontSize 11
+skinparam backgroundColor white
+skinparam ArrowColor #444441
+skinparam ArrowThickness 1.5
+
+skinparam component {
+    BackgroundColor<<stm32>> #EEEDFE
+    BorderColor<<stm32>> #534AB7
+    FontColor<<stm32>> #26215C
+
+    BackgroundColor<<rpi>> #E1F5EE
+    BorderColor<<rpi>> #0F6E56
+    FontColor<<rpi>> #04342C
+
+    BackgroundColor<<bus>> #FAEEDA
+    BorderColor<<bus>> #BA7517
+    FontColor<<bus>> #412402
+
+    BackgroundColor<<ethernet>> #E1F5EE
+    BorderColor<<ethernet>> #0F6E56
+    FontColor<<ethernet>> #04342C
+}
+
+'--- STM32 #1 (Source) ---
+package "STM32 #1\n(Zephyr RTOS)" <<stm32>> {
+    component [CAN1 TX\nt₀: send] as STM1_TX <<stm32>>
+    component [CAN2 RX\nt₃: receive] as STM1_RX <<stm32>>
+}
+
+'--- Raspberry Pi (Gateway) ---
+package "Raspberry Pi\n(Linux)" <<rpi>> {
+    component [CAN HAT RX] as RPI_CAN <<rpi>>
+    component [Linux Open1722\nEncapsulate] as RPI_ENC <<rpi>>
+    component [Ethernet TX] as RPI_ETH <<rpi>>
+}
+
+'--- STM32 #2 (Gateway) ---
+package "STM32 #2\n(Zephyr RTOS)" <<stm32>> {
+    component [Ethernet RX\n+ LAN8720 PHY] as STM2_ETH <<stm32>>
+    component [Zephyr Open1722\nDecapsulate] as STM2_DEC <<stm32>>
+    component [CAN1 TX] as STM2_CAN <<stm32>>
+}
+
+'--- Buses ---
+component [CAN Bus A\n250 kbps] as CANA <<bus>>
+component [CAN Bus B\n250 kbps] as CANB <<bus>>
+component [Ethernet\nDirect Cable\nIEEE-1722] as ETH <<ethernet>>
+
+'--- Flow ---
+STM1_TX --> CANA : t₀
+CANA --> RPI_CAN
+RPI_CAN --> RPI_ENC
+RPI_ENC --> RPI_ETH
+RPI_ETH --> ETH : IEEE-1722\nAVTP
+ETH --> STM2_ETH
+STM2_ETH --> STM2_DEC
+STM2_DEC --> STM2_CAN
+STM2_CAN --> CANB
+CANB --> STM1_RX : t₃
+
+note bottom of RPI_ENC
+    **Asymmetric Gateway Test**
+    Linux encapsulation vs
+    Zephyr decapsulation
+    Identifies bottleneck
+end note
+
+@enduml

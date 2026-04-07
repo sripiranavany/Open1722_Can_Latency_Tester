@@ -1,0 +1,79 @@
+@startuml Wireless IEEE-1722
+
+title Wireless IEEE-1722 over WiFi 6E / 5G
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Monospaced
+skinparam defaultFontSize 11
+skinparam backgroundColor white
+skinparam ArrowColor #444441
+skinparam ArrowThickness 1.5
+
+skinparam component {
+    BackgroundColor<<stm32>> #EEEDFE
+    BorderColor<<stm32>> #534AB7
+    FontColor<<stm32>> #26215C
+
+    BackgroundColor<<rpi>> #E1F5EE
+    BorderColor<<rpi>> #0F6E56
+    FontColor<<rpi>> #04342C
+
+    BackgroundColor<<wireless>> #FFF4E1
+    BorderColor<<wireless>> #D68910
+    FontColor<<wireless>> #5C3C0A
+
+    BackgroundColor<<bus>> #FAEEDA
+    BorderColor<<bus>> #BA7517
+    FontColor<<bus>> #412402
+}
+
+'--- STM32 ---
+package "STM32 F439ZI" <<stm32>> {
+    component [CAN1 TX\nt₀] as STM_TX <<stm32>>
+    component [CAN2 RX\nt₃] as STM_RX <<stm32>>
+}
+
+'--- RPi1 with WiFi ---
+package "Raspberry Pi 1\n+ WiFi 6E Module" <<rpi>> {
+    component [CAN HAT RX] as RPI1_CAN <<rpi>>
+    component [Open1722\nEncapsulate] as RPI1_ENC <<rpi>>
+    component [WiFi 6E\n6 GHz band] as RPI1_WIFI <<wireless>>
+}
+
+'--- Wireless Link ---
+component [Wireless Link\nWiFi 6E / 5G\nLow-latency mode] as WIRELESS <<wireless>>
+
+'--- RPi2 with WiFi ---
+package "Raspberry Pi 2\n+ WiFi 6E Module" <<rpi>> {
+    component [WiFi 6E\n6 GHz band] as RPI2_WIFI <<wireless>>
+    component [Open1722\nDecapsulate] as RPI2_DEC <<rpi>>
+    component [CAN HAT TX] as RPI2_CAN <<rpi>>
+}
+
+'--- Buses ---
+component [CAN Bus A] as CANA <<bus>>
+component [CAN Bus B] as CANB <<bus>>
+
+'--- Flow ---
+STM_TX --> CANA : t₀
+CANA --> RPI1_CAN
+RPI1_CAN --> RPI1_ENC
+RPI1_ENC --> RPI1_WIFI
+
+RPI1_WIFI ~~> WIRELESS : IEEE-1722\nover WiFi
+WIRELESS ~~> RPI2_WIFI
+
+RPI2_WIFI --> RPI2_DEC
+RPI2_DEC --> RPI2_CAN
+RPI2_CAN --> CANB
+CANB --> STM_RX : t₃
+
+note bottom of WIRELESS
+    **Wireless TSN Feasibility**
+    Measure wireless-induced jitter
+    Test under RF interference
+    Compare vs wired baseline
+    Automotive/industrial use case
+end note
+
+@enduml

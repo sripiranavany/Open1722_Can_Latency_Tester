@@ -1,0 +1,34 @@
+/ {
+    chosen {
+        zephyr,canbus = &can1;
+    };
+};
+
+/* CAN1 — PD0/PD1 on CN9 */
+&can1 {
+    status = "okay";
+    pinctrl-0 = <&can1_rx_pd0 &can1_tx_pd1>;
+    pinctrl-names = "default";
+    bus-speed = <250000>;
+    sample-point = <875>;
+};
+
+/* CAN2 — PB5 (RX) on CN7 pin14, PB6 (TX) on CN10 pin13 */
+&pinctrl {
+    can2_rx_pb5: can2_rx_pb5 {
+        pinmux = <STM32_PINMUX('B', 5, AF9)>;
+        bias-pull-up;
+    };
+    can2_tx_pb6: can2_tx_pb6 {
+        pinmux = <STM32_PINMUX('B', 6, AF9)>;
+        bias-pull-up;
+    };
+};
+
+&can2 {
+    status = "okay";
+    pinctrl-0 = <&can2_rx_pb5 &can2_tx_pb6>;
+    pinctrl-names = "default";
+    bus-speed = <250000>;
+    sample-point = <875>;
+};

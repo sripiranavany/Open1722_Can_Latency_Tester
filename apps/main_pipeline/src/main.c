@@ -4,7 +4,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <string.h>
 
-#define SLEEP_TIME_MS   1000
+#define SLEEP_TIME_MS   50
 
 /* Get button from devicetree */
 #define SW0_NODE DT_ALIAS(sw0)

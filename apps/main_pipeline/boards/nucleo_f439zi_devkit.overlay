@@ -32,3 +32,41 @@
     bus-speed = <250000>;
     sample-point = <875>;
 };
+
+&timers2 {
+    status = "okay";
+    counter2: counter {
+        status = "okay";
+    };
+};
+
+&timers1 {
+    status = "okay";
+    counter1: counter {
+        status = "okay";
+    };
+};
+
+&clk_hse {
+    clock-frequency = <DT_FREQ_M(8)>;
+    status = "okay";
+};
+
+&pll {
+    /* Formula: (HSE / M) * N / P = Frequency */
+    /* (8MHz / 8) * 360 / 2 = 180MHz */
+    div-m = <8>;
+    mul-n = <360>;
+    div-p = <2>;
+    div-q = <8>;
+    clocks = <&clk_hse>;
+    status = "okay";
+};
+
+&rcc {
+    clocks = <&pll>;
+    clock-frequency = <DT_FREQ_M(180)>;
+    ahb-prescaler = <1>;
+    apb1-prescaler = <4>; /* Max 45MHz for APB1 */
+    apb2-prescaler = <2>; /* Max 90MHz for APB2 */
+};

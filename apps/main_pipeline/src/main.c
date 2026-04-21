@@ -3,8 +3,19 @@
 #include <zephyr/drivers/can.h>
 #include <zephyr/drivers/gpio.h>
 #include <string.h>
+#include <zephyr/drivers/counter.h>
 
-#define SLEEP_TIME_MS   50
+#define SLEEP_TIME_MS   20
+
+#define TIMER_NODE DT_NODELABEL(counter2)
+
+const struct device *counter_dev = DEVICE_DT_GET(TIMER_NODE);
+
+uint32_t get_hw_timestamp_us(){
+    uint32_t ticks;
+    counter_get_value(counter_dev, &ticks);
+    return counter_ticks_to_us(counter_dev, ticks);
+}
 
 /* Get button from devicetree */
 #define SW0_NODE DT_ALIAS(sw0)
@@ -47,13 +58,11 @@ static struct latency_stats stats = {
 
 void can_rx_callback(const struct device *dev, struct can_frame *frame, void *user_data)
 {
-    uint32_t rx_timestamp_us, tx_timestamp_us, latency_us;
+    uint32_t rx_timestamp_us = get_hw_timestamp_us();
+    uint32_t tx_timestamp_us, latency_us;
     uint32_t rx_seq_num;
     uint32_t jitter_us = 0;
-    
-    /* Get receive timestamp in microseconds */
-    rx_timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
-    
+        
     /* Extract send timestamp from payload (first 4 bytes) */
     memcpy(&tx_timestamp_us, frame->data, sizeof(uint32_t));
     
@@ -61,7 +70,12 @@ void can_rx_callback(const struct device *dev, struct can_frame *frame, void *us
     memcpy(&rx_seq_num, &frame->data[4], sizeof(uint32_t));
     
     /* Calculate latency */
-    latency_us = rx_timestamp_us - tx_timestamp_us;
+    if (rx_timestamp_us >= tx_timestamp_us) {
+        latency_us = rx_timestamp_us - tx_timestamp_us;
+    } else {
+        uint32_t max_us = counter_ticks_to_us(counter_dev, counter_get_max_top_value(counter_dev));
+        latency_us = (max_us - tx_timestamp_us) + rx_timestamp_us;
+    }
     
     /* Detect packet loss */
     if (stats.count > 0) {
@@ -161,7 +175,7 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
     }
 }
 
-void main(void)
+int main(void)
 {
     int ret;
     struct can_frame frame_can1 = {
@@ -171,16 +185,33 @@ void main(void)
         .data = {0}  // Will be filled with timestamp and sequence
     };
 
+    // check the timer device ready
+    if(!device_is_ready(counter_dev)){
+        printk("Hardware timer is not ready\n");
+        return 0;
+    }
+
+    // configure timer to run freely to its max value
+    struct counter_top_cfg top_cfg = {
+        .callback = NULL,
+        .ticks = counter_get_max_top_value(counter_dev),
+        .user_data = NULL,
+        .flags = 0,
+    };
+
+    counter_set_top_value(counter_dev, &top_cfg);
+    counter_start(counter_dev);
+
     /* Check if CAN devices are ready */
     if (!device_is_ready(can1_dev) || !device_is_ready(can2_dev)) {
         printk("CAN devices not ready\n");
-        return;
+        return 0;
     }
 
     /* Check if button is ready */
     if (!gpio_is_ready_dt(&button)) {
         printk("Error: button device %s is not ready\n", button.port->name);
-        return;
+        return 0;
     }
 
     /* Configure button GPIO */
@@ -188,7 +219,7 @@ void main(void)
     if (ret != 0) {
         printk("Error %d: failed to configure %s pin %d\n",
                ret, button.port->name, button.pin);
-        return;
+        return 0;
     }
 
     /* Configure button interrupt */
@@ -196,7 +227,7 @@ void main(void)
     if (ret != 0) {
         printk("Error %d: failed to configure interrupt on %s pin %d\n",
                ret, button.port->name, button.pin);
-        return;
+        return 0;
     }
 
     /* Initialize button callback */
@@ -213,13 +244,13 @@ void main(void)
     ret = can_set_mode(can2_dev, CAN_MODE_NORMAL);
     if (ret != 0) {
         printk("Error setting CAN2 mode [%d]\n", ret);
-        return;
+        return 0;
     }
 
     ret = can_start(can2_dev);
     if (ret != 0) {
         printk("Error starting CAN2 [%d]\n", ret);
-        return;
+        return 0;
     }
 
     /* Add receive filter for CAN2 */
@@ -232,7 +263,7 @@ void main(void)
     int filter_id = can_add_rx_filter(can2_dev, can_rx_callback, NULL, &filter);
     if (filter_id < 0) {
         printk("Error adding CAN2 RX filter [%d]\n", filter_id);
-        return;
+        return 0;
     }
 
     printk("\n");
@@ -251,8 +282,9 @@ void main(void)
     while (1) {
         /* Only send if enabled */
         if (can_send_enabled) {
-            /* Get current timestamp in microseconds */
-            uint32_t tx_timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
+            // /* Get current timestamp in microseconds */
+            // uint32_t tx_timestamp_us = k_cyc_to_us_floor32(k_cycle_get_32());
+            uint32_t tx_timestamp_us = get_hw_timestamp_us();
             
             /* Embed timestamp in first 4 bytes of payload */
             memcpy(frame_can1.data, &tx_timestamp_us, sizeof(uint32_t));
@@ -272,4 +304,5 @@ void main(void)
         
         k_msleep(SLEEP_TIME_MS);
     }
+    return 0;
 }

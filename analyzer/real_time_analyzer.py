@@ -8,6 +8,7 @@ import datetime
 import sys
 import csv
 import statistics
+import re
 
 SERIAL_PORT = '/dev/ttyACM0'
 BAUD_RATE = 115200
@@ -43,16 +44,23 @@ class LatencyAnalyzer:
     def process_csv_line(self, line):
         """Extract and save CSV data"""
         try:
-            # Parse: CSV,SEQ,TX_TIME,RX_TIME,LATENCY,JITTER
-            parts = line.split(',')
+            # Remove ANSI escape codes (e.g. \x1b[0m from Zephyr colored logs)
+            line = re.sub(r'\x1b\[[0-9;]*m', '', line)
+
+            # Strip log prefix: "[00:00:29.488,000] <inf> can_handler: CSV,..."
+            csv_start = line.find('CSV,')
+            if csv_start == -1:
+                return False
+            
+            csv_part = line[csv_start:]
+            parts = csv_part.split(',')
+            
             if len(parts) >= 6:
                 seq, tx_time, rx_time, latency, jitter = parts[1:6]
                 
-                # Save to file
                 self.csv_writer.writerow([seq, tx_time, rx_time, latency, jitter])
                 self.file_handle.flush()
                 
-                # Store for statistics
                 self.latencies.append(int(latency))
                 self.jitters.append(int(jitter))
                 
@@ -99,7 +107,7 @@ class LatencyAnalyzer:
                     print(line)
                     
                     # Process CSV lines
-                    if line.startswith('CSV,'):
+                    if 'CSV,' in line:
                         self.process_csv_line(line)
                         
         except KeyboardInterrupt:

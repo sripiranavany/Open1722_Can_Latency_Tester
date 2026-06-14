@@ -1,0 +1,72 @@
+/ {
+    chosen {
+        zephyr,canbus = &can1;
+    };
+};
+
+/* CAN1 — PD0/PD1 on CN9 */
+&can1 {
+    status = "okay";
+    pinctrl-0 = <&can1_rx_pd0 &can1_tx_pd1>;
+    pinctrl-names = "default";
+    bus-speed = <250000>;
+    sample-point = <875>;
+};
+
+/* CAN2 — PB5 (RX) on CN7 pin14, PB6 (TX) on CN10 pin13 */
+&pinctrl {
+    can2_rx_pb5: can2_rx_pb5 {
+        pinmux = <STM32_PINMUX('B', 5, AF9)>;
+        bias-pull-up;
+    };
+    can2_tx_pb6: can2_tx_pb6 {
+        pinmux = <STM32_PINMUX('B', 6, AF9)>;
+        bias-pull-up;
+    };
+};
+
+&can2 {
+    status = "okay";
+    pinctrl-0 = <&can2_rx_pb5 &can2_tx_pb6>;
+    pinctrl-names = "default";
+    bus-speed = <250000>;
+    sample-point = <875>;
+};
+
+&timers2 {
+    status = "okay";
+    counter2: counter {
+        status = "okay";
+    };
+};
+
+&timers1 {
+    status = "okay";
+    counter1: counter {
+        status = "okay";
+    };
+};
+
+&clk_hse {
+    clock-frequency = <DT_FREQ_M(8)>;
+    status = "okay";
+};
+
+&pll {
+    /* Formula: (HSE / M) * N / P = Frequency */
+    /* (8MHz / 8) * 360 / 2 = 180MHz */
+    div-m = <8>;
+    mul-n = <360>;
+    div-p = <2>;
+    div-q = <8>;
+    clocks = <&clk_hse>;
+    status = "okay";
+};
+
+&rcc {
+    clocks = <&pll>;
+    clock-frequency = <DT_FREQ_M(180)>;
+    ahb-prescaler = <1>;
+    apb1-prescaler = <4>; /* Max 45MHz for APB1 */
+    apb2-prescaler = <2>; /* Max 90MHz for APB2 */
+};

@@ -3,7 +3,7 @@
 #include "can_handler.h"
 #include "button.h"
 
-#define SLEEP_TIME_MS 1000
+#define SLEEP_TIME_MS 50
 
 int main(void){
     timestamp_init();

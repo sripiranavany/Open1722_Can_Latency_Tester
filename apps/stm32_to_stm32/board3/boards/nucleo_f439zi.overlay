@@ -1,0 +1,13 @@
+/*
+ * Board 3 overlay — CAN1 TX back to main_pipeline CAN2 RX
+ * Ethernet (&mac, &mdio) already configured in the board DTS.
+ */
+
+/* CAN1 — PD0 (RX) / PD1 (TX), 250 kbps — connected to main_pipeline CAN2 */
+&can1 {
+	status = "okay";
+	pinctrl-0 = <&can1_rx_pd0 &can1_tx_pd1>;
+	pinctrl-names = "default";
+	bus-speed = <250000>;
+	sample-point = <875>;
+};

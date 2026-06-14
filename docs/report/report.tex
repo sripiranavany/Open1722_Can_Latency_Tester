@@ -1,0 +1,179 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{graphicx}
+\usepackage{listings} % Required for beautiful code/terminal formatting
+\usepackage{xcolor}   % Required for optional coloring in code blocks
+\usepackage{microtype} % Improves text justification
+
+% Optional: Configure the look of the terminal/service dumps
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    keepspaces=true,
+    showstringspaces=false
+}
+
+\begin{document}
+
+% ==========================================
+% 1. TITLE PAGE (First Page Only)
+% ==========================================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\large \textbf{Heilbronn University of Applied Sciences} \par}
+    {\large Course: Real Time Systems \par}
+    
+    \vspace{2.5cm}
+    
+    {\huge \bfseries Open1722 CAN Latency Tests \par}
+    \vspace{0.5cm}
+    {\Large Project Report \par}
+    
+    \vfill
+    
+    {\large \textbf{Author:}} \\
+    {\large Sripiranavan Yogarajah \par}
+    
+    \vfill
+    
+    {\large \today \par}
+\end{titlepage}
+
+% ==========================================
+% 2. TABLE OF CONTENTS & PAGE NUMBERS SECTION
+% ==========================================
+\newpage
+\pagenumbering{roman} % Use Roman numerals for intro pages if desired
+\tableofcontents
+\clearpage
+
+% ==========================================
+% 3. MAIN CONTENT
+% ==========================================
+\pagenumbering{arabic} % Switch to regular numbers (1, 2, 3...) for content
+
+\section{Introduction}
+This is the project report for the CAN Latency Tester. Below are the underlying environment configurations and systemd service specifications utilized during the testing setup.
+
+\subsection{System Environment}
+The test environment runs on the following OS distribution release details:
+
+\begin{lstlisting}[caption={OS Release Information (/etc/os-release)}]
+sripiranavan@sripiranavan:~ $ cat /etc/os-release 
+PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
+NAME="Debian GNU/Linux"
+VERSION_ID="13"
+VERSION="13 (trixie)"
+VERSION_CODENAME=trixie
+DEBIAN_VERSION_FULL=13.4
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"
+\end{lstlisting}
+
+\subsection{Network and Bridge Configuration}
+To initialize the Controller Area Network (CAN) interface at a bitrate of 250,000 bps, the following systemd service is deployed:
+
+\begin{lstlisting}[caption={CAN1 Interface Service (can1.service)}]
+sripiranavan@sripiranavan:/etc/systemd/system $ cat can1.service 
+[Unit]
+Description=Bring up CAN1 interface
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/ip link set can1 up type can bitrate 250000
+ExecStop=/sbin/ip link set can1 down
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+\end{lstlisting}
+
+\noindent Subsequently, the Open1722 CAN-to-Ethernet Bridge software is managed via the following service file to bind the `can1` interface to the network stack:
+
+\begin{lstlisting}[caption={Open1722 Bridge Service (acf-can-bridge.service)}]
+sripiranavan@sripiranavan:/etc/systemd/system $ cat acf-can-bridge.service 
+[Unit]
+Description=Open1722 CAN to Ethernet Bridge (Pi1)
+After=can1.service network-online.target
+Wants=can1.service network-online.target
+
+[Service]
+Type=simple
+ExecStart=/sripiranavan/Open1722/build/examples/acf-can/linux/acf-can-bridge \
+  --dst-addr e4:5f:01:2a:87:70 \
+  -i eth0 \
+  --canif can1
+
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+\end{lstlisting}
+
+
+\section{Methodology}
+This section outlines the experimental setup, detailing the specific hardware components and software frameworks utilized to construct the CAN Latency Tester environment.
+
+\subsection{System Components and Hardware Setup}
+The hardware architecture consists of multiple nodes configured to transmit, bridge, and monitor CAN frame latency. The complete bill of materials is detailed in Table~\ref{tab:hardware}.
+
+\begin{table}[h]
+    \centering
+    \caption{Hardware Components}
+    \label{tab:hardware}
+    \begin{tabular}{|l|c|p{7cm}|}
+        \hline
+        \textbf{Component} & \textbf{Quantity} & \textbf{Description / Role in Project} \\ \hline
+        Raspberry Pi 4 & 2 & Acts as the Linux host running the Open1722 CAN-to-Ethernet bridge application. \\ \hline
+        STM32F439ZI & 3 & Microcontroller development boards used as dedicated CAN nodes for traffic generation or timestamping. \\ \hline
+        CAN Transceiver & 4 & Interfaces the logic-level (TTL) signals from the controllers to the physical CAN bus differential voltages. \\ \hline
+        120\,$\Omega$ Resistor & 4 & Used for proper bus termination networks to prevent signal reflections across the nodes. \\ \hline
+        USB-CAN Adapter & 1 & Connected to a host machine for non-intrusive bus monitoring, packet sniffing, and verification. \\ \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Software Stack and Environment}
+To ensure predictable execution, real-time networking, and standardized encapsulation, the specific software frameworks listed in Table~\ref{tab:software} were deployed.
+
+\begin{table}[h]
+    \centering
+    \caption{Software Frameworks and Operating Systems}
+    \label{tab:software}
+    \begin{tabular}{|l|l|p{6.5cm}|}
+        \hline
+        \textbf{Software / OS} & \textbf{Version / Variant} & \textbf{Application Purpose} \\ \hline
+        Debian GNU/Linux & 13 (Trixie) & Operating system for the Raspberry Pi 4 hosts, managing network routing and systemd background services. \\ \hline
+        Zephyr OS & RTOS (Latest stable) & Real-Time Operating System running on the STM32 nodes to guarantee precise, deterministic CAN frame processing timelines. \\ \hline
+        Open1722 & Custom Build & High-performance audio/video bridging transport protocol engine used to encapsulate CAN traffic over Ethernet layers. \\ \hline
+    \end{tabular}
+\end{table}
+
+
+\subsection{Network Topology}
+% Tip: You can describe how they are connected here. 
+The nodes are physically linked over a shared bus terminated at both ends by the 120\,$\Omega$ resistors. The STM32 units running Zephyr OS interact natively with the CAN transceivers, while the Raspberry Pi 4 targets leverage the Open1722 infrastructure via systemd service units to bridge local data over the standard network interface setup.
+
+
+\section{Results}
+Present the results obtained from the CAN Latency Tester.
+
+\begin{figure}[h]
+    \centering
+    % \includegraphics[width=0.8\textwidth]{path/to/your/image.png}
+    \caption{A caption for the figure.}
+    \label{fig:example}
+\end{figure}
+
+
+\section{Conclusion}
+Summarize the findings and conclude the report.
+
+\end{document}

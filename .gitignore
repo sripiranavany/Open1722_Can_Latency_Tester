@@ -1,2 +1,22 @@
 ## need to skip build files
 ***build/
+
+
+# LaTeX auxiliary files
+*.aux
+*.bbl
+*.blg
+*.log
+*.lof
+*.lot
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Final PDF output
+*.pdf
+
+# Minted package cache directory
+_minted*

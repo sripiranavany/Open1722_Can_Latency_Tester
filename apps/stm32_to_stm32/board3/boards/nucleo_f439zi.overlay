@@ -11,3 +11,16 @@
 	bus-speed = <250000>;
 	sample-point = <875>;
 };
+
+/* Disable unused peripherals */
+&usart3 {
+	status = "disabled";
+};
+
+&usart6 {
+	status = "disabled";
+};
+
+&rtc {
+	status = "disabled";
+};

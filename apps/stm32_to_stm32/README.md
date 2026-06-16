@@ -101,6 +101,15 @@ jitter_us  = |latency_us - previous_latency_us|;
 
 ### Board 2 — CAN → AVTP Ethernet Bridge
 
+**Source layout:**
+
+| File | Responsibility |
+|------|---------------|
+| `main.c` | Init calls + CAN RX → AVTP TX loop |
+| `can_handler.c/h` | CAN1 init, RX filter, message queue |
+| `net_handler.c/h` | Ethernet link wait, socket create + destination address |
+| `avtp_handler.c/h` | `avtp_build_frame()` — builds NTSCF/GPC PDU from CAN frame |
+
 **What it does:**
 1. Listens on **CAN1** for frames with ID `0x123` (250 kbps, PD0/PD1)
 2. On every received CAN frame, builds an **AVTP NTSCF** packet containing the CAN payload
@@ -141,6 +150,15 @@ jitter_us  = |latency_us - previous_latency_us|;
 ---
 
 ### Board 3 — AVTP Ethernet → CAN Return Bridge
+
+**Source layout:**
+
+| File | Responsibility |
+|------|---------------|
+| `main.c` | Init calls + AVTP RX → CAN TX loop |
+| `can_handler.c/h` | CAN1 init, `can_send_return()` |
+| `net_handler.c/h` | Ethernet link wait, socket create + bind |
+| `avtp_handler.c/h` | `avtp_parse_frame()` — validates NTSCF/GPC and extracts payload |
 
 **What it does:**
 1. Binds an `AF_PACKET` socket to `ETH_P_TSN` (0x22F0) on the Ethernet interface
@@ -279,7 +297,7 @@ CSV,1,35570313,35571890,1577,54
 
 ### AVTP Stream ID
 
-Defined in both `board2/src/main.c` and `board3/src/main.c`:
+Defined in both `board2/src/avtp_handler.h` and `board3/src/avtp_handler.h`:
 
 ```c
 #define STREAM_ID  0xAABBCCDDEEFF0001ULL
@@ -332,7 +350,13 @@ get_filename_component(OPEN1722_DIR
 
 file(GLOB_RECURSE OPEN1722_SOURCES "${OPEN1722_DIR}/src/*.c")
 
-target_sources(app PRIVATE src/main.c ${OPEN1722_SOURCES})
+target_sources(app PRIVATE
+    src/main.c
+    src/can_handler.c
+    src/net_handler.c
+    src/avtp_handler.c
+    ${OPEN1722_SOURCES}
+)
 target_include_directories(app PUBLIC ${OPEN1722_DIR}/include)
 ```
 
@@ -358,5 +382,5 @@ target_include_directories(app PUBLIC ${OPEN1722_DIR}/include)
 - Ensure 120 Ω termination resistors are on the CAN bus
 
 ### AVTP frames are received but stream ID mismatch
-- Both `board2/src/main.c` and `board3/src/main.c` must define the same `STREAM_ID`
+- Both `board2/src/avtp_handler.h` and `board3/src/avtp_handler.h` must define the same `STREAM_ID`
 - Default: `0xAABBCCDDEEFF0001ULL`

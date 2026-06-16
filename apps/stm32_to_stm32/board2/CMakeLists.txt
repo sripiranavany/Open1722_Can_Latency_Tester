@@ -9,7 +9,13 @@ project(avtp_talker)
 
 file(GLOB_RECURSE OPEN1722_SOURCES "${OPEN1722_DIR}/src/*.c")
 
-target_sources(app PRIVATE src/main.c ${OPEN1722_SOURCES})
+target_sources(app PRIVATE
+    src/main.c
+    src/can_handler.c
+    src/net_handler.c
+    src/avtp_handler.c
+    ${OPEN1722_SOURCES}
+)
 
 target_include_directories(app PUBLIC
     ${OPEN1722_DIR}/include

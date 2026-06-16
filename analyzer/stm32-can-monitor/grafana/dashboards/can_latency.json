@@ -1,0 +1,504 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB-STM32",
+      "label": "InfluxDB-STM32",
+      "type": "datasource",
+      "pluginId": "influxdb"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana",    "id": "grafana",    "name": "Grafana",    "version": "10.4.3" },
+    { "type": "datasource", "id": "influxdb",   "name": "InfluxDB",   "version": "1.0.0" },
+    { "type": "panel",      "id": "stat",       "name": "Stat",       "version": "" },
+    { "type": "panel",      "id": "gauge",      "name": "Gauge",      "version": "" },
+    { "type": "panel",      "id": "timeseries", "name": "Time series","version": "" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "liveNow": true,
+  "panels": [
+
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Min Latency",
+      "description": "All-time minimum one-way CAN latency",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 300 },
+            { "color": "red",    "value": 800 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value", "graphMode": "none",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\")\n  |> filter(fn: (r) => r._field == \"min_latency_us\")\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Max Latency",
+      "description": "Worst-case CAN latency observed since test start",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 500 },
+            { "color": "red",    "value": 1500 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value", "graphMode": "none",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\")\n  |> filter(fn: (r) => r._field == \"max_latency_us\")\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Avg Latency",
+      "description": "Running mean latency computed on STM32",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 400 },
+            { "color": "red",    "value": 900 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value", "graphMode": "area",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\")\n  |> filter(fn: (r) => r._field == \"avg_latency_us\")\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Std Dev",
+      "description": "Population std-dev of latency — computed on STM32 via integer sqrt(E[X²]-(E[X])²)",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 50 },
+            { "color": "red",    "value": 200 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value", "graphMode": "none",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\")\n  |> filter(fn: (r) => r._field == \"stddev_us\")\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 5,
+      "type": "gauge",
+      "title": "Frame Rate (RX)",
+      "description": "Received frames per second — computed as derivative of total_frames counter",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fps",
+          "min": 0,
+          "max": 25,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red",    "value": null },
+            { "color": "yellow", "value": 15 },
+            { "color": "green",  "value": 19 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"total_frames\")\n  |> derivative(unit: 1s, nonNegative: true)\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Packet Loss %",
+      "description": "Cumulative loss % = lost / (received + lost) × 100 — sequence-number gaps detected on STM32",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 0.1 },
+            { "color": "red",    "value": 1.0 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background", "graphMode": "none",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\")\n  |> filter(fn: (r) => r._field == \"lost_frames\" or r._field == \"total_frames\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: if (r.lost_frames + r.total_frames) > 0 then float(v: r.lost_frames) / float(v: r.lost_frames + r.total_frames) * 100.0 else 0.0}))\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Frames RX",
+      "description": "Total CAN frames received since last reset",
+      "gridPos": { "h": 3, "w": 6, "x": 0, "y": 4 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "#73BF69" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value", "graphMode": "area",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"total_frames\")\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Frames Lost",
+      "description": "Cumulative lost frames detected via sequence number gaps on STM32",
+      "gridPos": { "h": 3, "w": 6, "x": 6, "y": 4 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red",    "value": 10 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background", "graphMode": "none",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"lost_frames\")\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Latency Range",
+      "description": "Max − Min latency: spread of latency distribution",
+      "gridPos": { "h": 3, "w": 6, "x": 12, "y": 4 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 200 },
+            { "color": "red",    "value": 500 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value", "graphMode": "none",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\")\n  |> filter(fn: (r) => r._field == \"max_latency_us\" or r._field == \"min_latency_us\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: r.max_latency_us - r.min_latency_us}))\n  |> last()"
+      }]
+    },
+
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Peak Jitter",
+      "description": "Worst-case single-frame jitter seen since last reset",
+      "gridPos": { "h": 3, "w": 6, "x": 18, "y": 4 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 100 },
+            { "color": "red",    "value": 300 }
+          ]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value", "graphMode": "none",
+        "justifyMode": "center", "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [{
+        "refId": "A",
+        "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+        "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"jitter_us\")\n  |> max()"
+      }]
+    },
+
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "CAN Bus Latency & Jitter — Real Time",
+      "description": "Per-frame one-way latency and inter-frame jitter",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 7 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "custom": {
+            "lineWidth": 1, "fillOpacity": 8,
+            "gradientMode": "opacity", "spanNulls": false,
+            "showPoints": "never", "drawStyle": "line"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "jitter_us" },
+            "properties": [
+              { "id": "displayName", "value": "Jitter" },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "latency_us" },
+            "properties": [
+              { "id": "displayName", "value": "Latency" },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#73BF69" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["min", "max", "mean"] }
+      },
+      "targets": [
+        {
+          "refId": "Latency",
+          "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+          "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"latency_us\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"latency_us\")"
+        },
+        {
+          "refId": "Jitter",
+          "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+          "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"jitter_us\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"jitter_us\")"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Frame Rate & Std Dev",
+      "description": "RX frame rate (derivative of total_frames) and latency standard deviation over time",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "spanNulls": false, "showPoints": "never" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "fps" },
+            "properties": [
+              { "id": "unit",        "value": "fps" },
+              { "id": "displayName", "value": "FPS (RX)" },
+              { "id": "color",       "value": { "mode": "fixed", "fixedColor": "#5794F2" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "stddev_us" },
+            "properties": [
+              { "id": "unit",        "value": "µs" },
+              { "id": "displayName", "value": "Std Dev (µs)" },
+              { "id": "color",       "value": { "mode": "fixed", "fixedColor": "#FF9830" } },
+              { "id": "custom.axisPlacement", "value": "right" }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "refId": "FPS",
+          "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+          "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"total_frames\")\n  |> derivative(unit: 1s, nonNegative: true)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"fps\")"
+        },
+        {
+          "refId": "StdDev",
+          "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+          "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"stddev_us\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"stddev_us\")"
+        }
+      ]
+    },
+
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Packet Loss % & Cumulative Lost Frames",
+      "description": "Loss % computed from on-device sequence-gap counters; lost frame count over time",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 2, "fillOpacity": 15, "spanNulls": false, "showPoints": "never" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "loss_pct" },
+            "properties": [
+              { "id": "unit",        "value": "percent" },
+              { "id": "displayName", "value": "Loss %" },
+              { "id": "color",       "value": { "mode": "fixed", "fixedColor": "#F2495C" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "lost_frames" },
+            "properties": [
+              { "id": "unit",        "value": "short" },
+              { "id": "displayName", "value": "Lost Frames (cumulative)" },
+              { "id": "color",       "value": { "mode": "fixed", "fixedColor": "#B877D9" } },
+              { "id": "custom.axisPlacement", "value": "right" }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "refId": "LossPct",
+          "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+          "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\")\n  |> filter(fn: (r) => r._field == \"lost_frames\" or r._field == \"total_frames\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, _value: if (r.lost_frames + r.total_frames) > 0 then float(v: r.lost_frames) / float(v: r.lost_frames + r.total_frames) * 100.0 else 0.0}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> yield(name: \"loss_pct\")"
+        },
+        {
+          "refId": "LostFrames",
+          "datasource": { "type": "influxdb", "uid": "influxdb-stm32" },
+          "query": "from(bucket: \"can_latency\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"can_latency\" and r._field == \"lost_frames\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> yield(name: \"lost_frames\")"
+        }
+      ]
+    }
+
+  ],
+  "refresh": "1s",
+  "schemaVersion": 38,
+  "tags": ["stm32", "can", "latency", "embedded", "realtime"],
+  "templating": { "list": [] },
+  "time": { "from": "now-5m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "STM32 CAN Latency Monitor",
+  "uid": "stm32-can-001",
+  "version": 2,
+  "weekStart": ""
+}

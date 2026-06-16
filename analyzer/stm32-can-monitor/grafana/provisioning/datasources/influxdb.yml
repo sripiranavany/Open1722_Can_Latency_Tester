@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name:      InfluxDB-STM32
+    uid:       influxdb-stm32          # referenced by every dashboard panel
+    type:      influxdb
+    access:    proxy
+    url:       http://influxdb:8086
+    isDefault: true
+    jsonData:
+      version:       Flux
+      organization:  stm32org
+      defaultBucket: can_latency
+      tlsSkipVerify: true
+    secureJsonData:
+      token: stm32-super-secret-token-change-me
+    editable: false

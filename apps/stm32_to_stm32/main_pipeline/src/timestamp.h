@@ -1,6 +1,5 @@
 #ifndef TIMESTAMP_H
 #define TIMESTAMP_H
-#define TIMER_NODE DT_NODELABEL(app_timer)
 
 #include <zephyr/device.h>
 #include <stdint.h>

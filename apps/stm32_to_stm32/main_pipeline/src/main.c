@@ -18,12 +18,9 @@ int main(void){
 
     while(1){
         if(can_send_enabled){
-            uint32_t ts = get_hw_timestamp_us();
-            int ret = can_send_frame(ts,tx_sequence_num);
+            int ret = can_send_frame(tx_sequence_num);
             if(ret != 0){
                 printk("[TX] Send failed [%d] seq=%u\n", ret, tx_sequence_num);
-            } else {
-                printk("[TX] Seq=%u @ %u us\n", tx_sequence_num, ts);
             }
             tx_sequence_num++;
         }

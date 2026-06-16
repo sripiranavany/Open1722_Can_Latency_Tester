@@ -14,21 +14,18 @@ uint32_t tx_sequence_num = 0;
 
 static void can_rx_callback(const struct device *dev, struct can_frame *frame, void *user_data)
 {
-    uint32_t rx_timestamp_us = get_hw_timestamp_us();
-    uint32_t tx_timestamp_us, latency_us, rx_seq_num;
+    uint32_t rx_ticks = get_hw_timestamp_ticks();
+    uint32_t tx_ticks, rx_seq_num;
 
-    memcpy(&tx_timestamp_us, frame->data, sizeof(uint32_t));
+    memcpy(&tx_ticks,   frame->data,     sizeof(uint32_t));
     memcpy(&rx_seq_num, &frame->data[4], sizeof(uint32_t));
 
-    if (rx_timestamp_us >= tx_timestamp_us) {
-        latency_us = rx_timestamp_us - tx_timestamp_us;
-    } else {
-        latency_us = rx_timestamp_us + (get_timer_max_us() - tx_timestamp_us);
-    }
+    /* Tick subtraction handles 32-bit wraparound correctly via unsigned underflow */
+    uint32_t latency_us = ticks_to_us(rx_ticks - tx_ticks);
 
     uint32_t jitter_us = stats_record(latency_us, rx_seq_num);
 
-    LOG_INF("CSV,%u,%u,%u,%u,%u", rx_seq_num, tx_timestamp_us, rx_timestamp_us, latency_us, jitter_us);
+    LOG_INF("CSV,%u,%u,%u,%u,%u", rx_seq_num, tx_ticks, rx_ticks, latency_us, jitter_us);
     // printk("CSV,%u,%u,%u,%u,%u\n", rx_seq_num, tx_timestamp_us, rx_timestamp_us, latency_us, jitter_us);
     // printk("[RX] Seq=%u, Latency=%u us, Jitter=%u us\n", rx_seq_num, latency_us, jitter_us);
 }
@@ -74,7 +71,7 @@ int can_handler_init(void)
     return 0;
 }
 
-int can_send_frame(uint32_t timestamp_us, uint32_t seq_num)
+int can_send_frame(uint32_t seq_num)
 {
     struct can_frame frame = {
         .id = 0x123,
@@ -83,8 +80,11 @@ int can_send_frame(uint32_t timestamp_us, uint32_t seq_num)
         .data = {0}
     };
 
-    memcpy(frame.data, &timestamp_us, sizeof(uint32_t));
     memcpy(&frame.data[4], &seq_num, sizeof(uint32_t));
+
+    /* Capture ticks as late as possible, right before handing to CAN controller */
+    uint32_t tx_ticks = get_hw_timestamp_ticks();
+    memcpy(frame.data, &tx_ticks, sizeof(uint32_t));
 
     return can_send(can1_dev, &frame, K_MSEC(100), NULL, NULL);
 }

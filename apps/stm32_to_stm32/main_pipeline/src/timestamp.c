@@ -26,6 +26,18 @@ uint32_t get_hw_timestamp_us(void)
     return counter_ticks_to_us(counter_dev, ticks);
 }
 
+uint32_t get_hw_timestamp_ticks(void)
+{
+    uint32_t ticks;
+    counter_get_value(counter_dev, &ticks);
+    return ticks;
+}
+
+uint32_t ticks_to_us(uint32_t ticks)
+{
+    return counter_ticks_to_us(counter_dev, ticks);
+}
+
 uint32_t get_timer_max_us(void)
 {
     uint32_t max_ticks = counter_get_max_top_value(counter_dev);

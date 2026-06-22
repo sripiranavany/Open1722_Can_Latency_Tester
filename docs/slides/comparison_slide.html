@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results — CAN Latency Comparison</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0f1117;
+    color: #e8eaf0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: #8892a4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin-bottom: 48px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── comparison table ── */
+  table {
+    border-collapse: collapse;
+    width: 820px;
+    margin-bottom: 52px;
+  }
+
+  thead th {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8892a4;
+    padding: 12px 28px;
+    border-bottom: 1px solid #2a2f3e;
+    text-align: center;
+  }
+
+  thead th:first-child { text-align: left; }
+
+  tbody tr { border-bottom: 1px solid #1c2030; }
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody td {
+    padding: 14px 28px;
+    font-size: 1.05rem;
+    text-align: center;
+    color: #c0c8d8;
+  }
+
+  tbody td:first-child {
+    text-align: left;
+    font-size: 0.88rem;
+    color: #6b7585;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  /* highlighted rows */
+  tr.highlight-rpi td:nth-child(2) {
+    color: #f87171;
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+
+  tr.highlight-zephyr td:nth-child(3) {
+    color: #34d399;
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+
+  /* column headers coloured */
+  .col-rpi   { color: #f87171 !important; }
+  .col-zephyr { color: #34d399 !important; }
+
+  /* ── key insight block ── */
+  .insight-row {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 44px;
+  }
+
+  .insight {
+    flex: 1;
+    border-radius: 12px;
+    padding: 28px 32px;
+    text-align: center;
+  }
+
+  .insight.rpi    { background: #1e1214; border: 1px solid #4b1f1f; }
+  .insight.zephyr { background: #0d1e18; border: 1px solid #1a4a35; }
+
+  .insight .label {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .insight.rpi    .label { color: #f87171; }
+  .insight.zephyr .label { color: #34d399; }
+
+  .insight .number {
+    font-size: 3.4rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .insight.rpi    .number { color: #fca5a5; }
+  .insight.zephyr .number { color: #6ee7b7; }
+
+  .insight .unit {
+    font-size: 0.9rem;
+    color: #4a5568;
+  }
+
+  /* ── bottom tagline ── */
+  .tagline {
+    font-size: 1.05rem;
+    color: #6b7585;
+    letter-spacing: 0.02em;
+  }
+
+  .tagline strong {
+    color: #a78bfa;
+    font-weight: 600;
+  }
+
+  .reduction-badge {
+    display: inline-block;
+    background: #1e1a30;
+    border: 1px solid #4c3a8a;
+    border-radius: 6px;
+    padding: 2px 12px;
+    margin-left: 8px;
+    font-size: 0.95rem;
+    color: #a78bfa;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<h1>Measurement Results</h1>
+<p class="subtitle">CAN Round-Trip Latency &nbsp;·&nbsp; Linux (RPi) Bridge vs Zephyr (STM32) Bridge</p>
+
+<div class="insight-row">
+  <div class="insight rpi">
+    <div class="label">Linux — Raspberry Pi bridge &nbsp;·&nbsp; max jitter</div>
+    <div class="number">930</div>
+    <div class="unit">microseconds</div>
+  </div>
+  <div class="insight zephyr">
+    <div class="label">Zephyr — STM32 bridge &nbsp;·&nbsp; max jitter</div>
+    <div class="number">27</div>
+    <div class="unit">microseconds</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th class="col-rpi">Linux (RPi) bridge</th>
+      <th class="col-zephyr">Zephyr (STM32) bridge</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Min latency</td>
+      <td>1,140 µs</td>
+      <td>1,070 µs</td>
+    </tr>
+    <tr class="highlight-rpi highlight-zephyr">
+      <td>Max latency</td>
+      <td>2,090 µs</td>
+      <td>1,100 µs</td>
+    </tr>
+    <tr>
+      <td>Mean latency</td>
+      <td>1,174 µs</td>
+      <td>1,085 µs</td>
+    </tr>
+    <tr class="highlight-rpi highlight-zephyr">
+      <td>Max jitter</td>
+      <td>930 µs</td>
+      <td>27 µs</td>
+    </tr>
+    <tr>
+      <td>Spikes observed</td>
+      <td>5 / 562 frames</td>
+      <td>0 / 87 frames</td>
+    </tr>
+    <tr>
+      <td>Packet loss</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="tagline">
+  Not a lower average — a <strong>bounded worst case</strong>
+  <span class="reduction-badge">97% jitter reduction</span>
+</p>
+
+</body>
+</html>

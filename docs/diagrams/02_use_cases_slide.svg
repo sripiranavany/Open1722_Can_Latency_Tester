@@ -1,0 +1,214 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#161b27;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"  style="stop-color:#00b4d8;stop-opacity:0"/>
+      <stop offset="30%" style="stop-color:#00b4d8;stop-opacity:1"/>
+      <stop offset="70%" style="stop-color:#7b2ff7;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#7b2ff7;stop-opacity:0"/>
+    </linearGradient>
+    <filter id="softShadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#ffffff" stroke-width="0.3" opacity="0.04"/>
+    </pattern>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4ade80"/>
+    </marker>
+  </defs>
+
+  <!-- Background + grid -->
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+  <rect x="0" y="0" width="1920" height="4" fill="url(#accentLine)"/>
+
+  <!-- ── HEADER ── -->
+  <text x="960" y="52"  font-family="'Segoe UI',Arial,sans-serif" font-size="18" fill="#4a5568" text-anchor="middle" letter-spacing="4">SEGMENT 2</text>
+  <text x="960" y="108" font-family="'Segoe UI',Arial,sans-serif" font-size="56" font-weight="700" fill="#e8edf5" text-anchor="middle">Use Cases</text>
+  <text x="960" y="142" font-family="'Segoe UI',Arial,sans-serif" font-size="22" fill="#64748b" text-anchor="middle">Why this matters in practice</text>
+  <line x1="400" y1="155" x2="1520" y2="155" stroke="url(#accentLine)" stroke-width="1"/>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--  CARD 1 — AUTOMOTIVE  (x=72, cx=344)       -->
+  <!-- ══════════════════════════════════════════ -->
+  <rect x="72"  y="168" width="544" height="850" rx="16" fill="#030c14" stroke="#00b4d8" stroke-width="1.5" filter="url(#softShadow)"/>
+  <rect x="72"  y="168" width="544" height="5"   rx="3"  fill="#00b4d8" opacity="0.8"/>
+  <!-- badge -->
+  <circle cx="344" cy="168" r="26" fill="#030c14" stroke="#00b4d8" stroke-width="2"/>
+  <text x="344" y="176" font-family="'Segoe UI',Arial,sans-serif" font-size="22" font-weight="700" fill="#00b4d8" text-anchor="middle">1</text>
+
+  <!-- icon area -->
+  <rect x="92" y="188" width="504" height="200" rx="10" fill="#040f1c" stroke="#0a2535" stroke-width="1"/>
+
+  <!-- CAN bus line -->
+  <line x1="148" y1="302" x2="548" y2="302" stroke="#00b4d8" stroke-width="3" opacity="0.5"/>
+  <text x="200" y="295" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#00b4d8" opacity="0.6" letter-spacing="2">CAN BUS</text>
+
+  <!-- ECU 1 -->
+  <rect x="148" y="218" width="72" height="34" rx="5" fill="#071827" stroke="#00b4d8" stroke-width="1.5"/>
+  <text x="184" y="240" font-family="monospace" font-size="12" fill="#00b4d8" text-anchor="middle">ECU 1</text>
+  <line x1="184" y1="252" x2="184" y2="302" stroke="#00b4d8" stroke-width="1.5"/>
+
+  <!-- ECU 2 -->
+  <rect x="308" y="212" width="72" height="34" rx="5" fill="#071827" stroke="#00b4d8" stroke-width="1.5"/>
+  <text x="344" y="234" font-family="monospace" font-size="12" fill="#00b4d8" text-anchor="middle">ECU 2</text>
+  <line x1="344" y1="246" x2="344" y2="302" stroke="#00b4d8" stroke-width="1.5"/>
+
+  <!-- ECU 3 -->
+  <rect x="468" y="218" width="72" height="34" rx="5" fill="#071827" stroke="#00b4d8" stroke-width="1.5"/>
+  <text x="504" y="240" font-family="monospace" font-size="12" fill="#00b4d8" text-anchor="middle">ECU 3</text>
+  <line x1="504" y1="252" x2="504" y2="302" stroke="#00b4d8" stroke-width="1.5"/>
+
+  <!-- Gateway -->
+  <rect x="278" y="316" width="132" height="46" rx="7" fill="#071827" stroke="#00b4d8" stroke-width="2"/>
+  <text x="344" y="335" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#00b4d8" text-anchor="middle">CAN → Eth</text>
+  <text x="344" y="352" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#00b4d8" text-anchor="middle">Gateway</text>
+  <line x1="344" y1="302" x2="344" y2="316" stroke="#00b4d8" stroke-width="2"/>
+
+  <!-- Ethernet arrow out -->
+  <line x1="410" y1="339" x2="526" y2="339" stroke="#4ade80" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowGreen)"/>
+  <text x="468" y="330" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#4ade80" text-anchor="middle">Ethernet</text>
+
+  <!-- card title -->
+  <text x="344" y="428" font-family="'Segoe UI',Arial,sans-serif" font-size="26" font-weight="700" fill="#00b4d8" text-anchor="middle">Automotive Systems</text>
+  <line x1="92" y1="444" x2="616" y2="444" stroke="#0a2535" stroke-width="1"/>
+
+  <!-- bullets -->
+  <circle cx="108" cy="474" r="5" fill="#00b4d8"/>
+  <text x="124" y="479" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">ECUs in a vehicle communicate over CAN</text>
+
+  <circle cx="108" cy="530" r="5" fill="#00b4d8"/>
+  <text x="124" y="535" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">Central gateway bridges CAN → Ethernet</text>
+
+  <circle cx="108" cy="586" r="5" fill="#00b4d8"/>
+  <text x="124" y="591" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">Safety-critical systems at risk:</text>
+  <text x="124" y="616" font-family="'Segoe UI',Arial,sans-serif" font-size="17" fill="#64748b">brake-by-wire · power steering</text>
+
+  <!-- key insight -->
+  <rect x="92" y="780" width="504" height="80" rx="10" fill="#030c14" stroke="#00b4d8" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="344" y="812" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#00b4d8" text-anchor="middle" font-style="italic">Every ms of unpredictable latency can</text>
+  <text x="344" y="836" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#00b4d8" text-anchor="middle" font-style="italic">destabilize a safety-critical control loop</text>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--  CARD 2 — INDUSTRIAL  (x=688, cx=960)      -->
+  <!-- ══════════════════════════════════════════ -->
+  <rect x="688" y="168" width="544" height="850" rx="16" fill="#0f0600" stroke="#ff8c42" stroke-width="1.5" filter="url(#softShadow)"/>
+  <rect x="688" y="168" width="544" height="5"   rx="3"  fill="#ff8c42" opacity="0.8"/>
+  <circle cx="960" cy="168" r="26" fill="#0f0600" stroke="#ff8c42" stroke-width="2"/>
+  <text x="960" y="176" font-family="'Segoe UI',Arial,sans-serif" font-size="22" font-weight="700" fill="#ff8c42" text-anchor="middle">2</text>
+
+  <!-- icon area -->
+  <rect x="708" y="188" width="504" height="200" rx="10" fill="#0a0400" stroke="#2a1000" stroke-width="1"/>
+
+  <!-- CAN controller box -->
+  <rect x="728" y="258" width="82" height="52" rx="6" fill="#1a0800" stroke="#ff8c42" stroke-width="1.5"/>
+  <text x="769" y="280" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#ff8c42" text-anchor="middle">CAN</text>
+  <text x="769" y="297" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#ff8c42" text-anchor="middle">Controller</text>
+
+  <!-- CAN cable to robot base -->
+  <line x1="810" y1="284" x2="856" y2="284" stroke="#ff8c42" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="833" y="276" font-family="'Segoe UI',Arial,sans-serif" font-size="10" fill="#ff8c42" text-anchor="middle" opacity="0.7">CAN</text>
+
+  <!-- Robot arm structure -->
+  <!-- Floor/base platform -->
+  <rect x="850" y="354" width="100" height="20" rx="4" fill="#1a0800" stroke="#ff8c42" stroke-width="2"/>
+  <!-- Base joint -->
+  <circle cx="900" cy="354" r="10" fill="#0a0400" stroke="#ff8c42" stroke-width="2"/>
+  <!-- Lower arm segment (angled polygon) -->
+  <polygon points="892,354 908,354 942,250 926,250" fill="#1a0800" stroke="#ff8c42" stroke-width="1.5"/>
+  <!-- Elbow joint -->
+  <circle cx="934" cy="250" r="9" fill="#0a0400" stroke="#ff8c42" stroke-width="2"/>
+  <!-- Upper arm segment -->
+  <polygon points="929,244 939,256 1055,224 1045,212" fill="#1a0800" stroke="#ff8c42" stroke-width="1.5"/>
+  <!-- Wrist joint -->
+  <circle cx="1050" cy="218" r="8" fill="#0a0400" stroke="#ff8c42" stroke-width="2"/>
+  <!-- Gripper fingers -->
+  <rect x="1054" y="202" width="9"  height="28" rx="2" fill="#ff8c42"/>
+  <rect x="1066" y="202" width="9"  height="22" rx="2" fill="#ff8c42"/>
+  <!-- Target part -->
+  <rect x="1082" y="208" width="24" height="18" rx="3" fill="#1a0800" stroke="#ff8c42" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- card title -->
+  <text x="960" y="428" font-family="'Segoe UI',Arial,sans-serif" font-size="26" font-weight="700" fill="#ff8c42" text-anchor="middle">Industrial Automation</text>
+  <line x1="708" y1="444" x2="1232" y2="444" stroke="#2a1000" stroke-width="1"/>
+
+  <!-- bullets -->
+  <circle cx="724" cy="474" r="5" fill="#ff8c42"/>
+  <text x="740" y="479" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">Robot arms receive commands over CAN</text>
+
+  <circle cx="724" cy="530" r="5" fill="#ff8c42"/>
+  <text x="740" y="535" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">Unpredictable timing causes jerky</text>
+  <text x="740" y="560" font-family="'Segoe UI',Arial,sans-serif" font-size="17" fill="#64748b">or unsafe motion</text>
+
+  <circle cx="724" cy="596" r="5" fill="#ff8c42"/>
+  <text x="740" y="601" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">Missed deadlines can cause physical</text>
+  <text x="740" y="626" font-family="'Segoe UI',Arial,sans-serif" font-size="17" fill="#64748b">damage or injury</text>
+
+  <!-- key insight -->
+  <rect x="708" y="780" width="504" height="80" rx="10" fill="#0a0400" stroke="#ff8c42" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="960" y="812" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#ff8c42" text-anchor="middle" font-style="italic">Real-time guarantees are not optional</text>
+  <text x="960" y="836" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#ff8c42" text-anchor="middle" font-style="italic">in industrial safety applications</text>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--  CARD 3 — RESEARCH & TESTING (x=1304)     -->
+  <!-- ══════════════════════════════════════════ -->
+  <rect x="1304" y="168" width="544" height="850" rx="16" fill="#060310" stroke="#7b2ff7" stroke-width="1.5" filter="url(#softShadow)"/>
+  <rect x="1304" y="168" width="544" height="5"   rx="3"  fill="#7b2ff7" opacity="0.8"/>
+  <circle cx="1576" cy="168" r="26" fill="#060310" stroke="#7b2ff7" stroke-width="2"/>
+  <text x="1576" y="176" font-family="'Segoe UI',Arial,sans-serif" font-size="22" font-weight="700" fill="#a78bfa" text-anchor="middle">3</text>
+
+  <!-- icon area -->
+  <rect x="1324" y="188" width="504" height="200" rx="10" fill="#04020c" stroke="#1a0a2a" stroke-width="1"/>
+
+  <!-- bar chart axes -->
+  <line x1="1388" y1="202" x2="1388" y2="368" stroke="#2a1a4a" stroke-width="2"/>
+  <line x1="1388" y1="368" x2="1768" y2="368" stroke="#2a1a4a" stroke-width="2"/>
+
+  <!-- Y axis label -->
+  <text x="1376" y="290" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#3b2a5a" text-anchor="middle" transform="rotate(-90,1376,290)">worst-case latency</text>
+
+  <!-- Bar 1: Linux Untuned — tall, red -->
+  <rect x="1428" y="215" width="86" height="153" rx="4" fill="#2a0808" stroke="#ef4444" stroke-width="1.5"/>
+  <rect x="1428" y="215" width="86" height="8"   rx="4" fill="#ef4444"/>
+  <text x="1471" y="384" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">Untuned</text>
+  <text x="1471" y="400" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Linux</text>
+
+  <!-- Bar 2: Linux Optimized — medium, green -->
+  <rect x="1554" y="300" width="86" height="68" rx="4" fill="#082808" stroke="#4ade80" stroke-width="1.5"/>
+  <rect x="1554" y="300" width="86" height="8"  rx="4" fill="#4ade80"/>
+  <text x="1597" y="384" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">Optimized</text>
+  <text x="1597" y="400" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Linux</text>
+
+  <!-- Bar 3: Zephyr — short dashed purple (expected) -->
+  <rect x="1680" y="338" width="86" height="30" rx="4" fill="#180830" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <rect x="1680" y="338" width="86" height="8"  rx="4" fill="#a78bfa" opacity="0.6"/>
+  <text x="1723" y="334" font-family="'Segoe UI',Arial,sans-serif" font-size="15" fill="#a78bfa" text-anchor="middle">?</text>
+  <text x="1723" y="384" font-family="'Segoe UI',Arial,sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">Zephyr</text>
+  <text x="1723" y="400" font-family="'Segoe UI',Arial,sans-serif" font-size="11" fill="#64748b" text-anchor="middle">RTOS</text>
+
+  <!-- card title -->
+  <text x="1576" y="428" font-family="'Segoe UI',Arial,sans-serif" font-size="26" font-weight="700" fill="#a78bfa" text-anchor="middle">Research &amp; Testing</text>
+  <line x1="1324" y1="444" x2="1848" y2="444" stroke="#1a0a2a" stroke-width="1"/>
+
+  <!-- bullets -->
+  <circle cx="1340" cy="474" r="5" fill="#a78bfa"/>
+  <text x="1356" y="479" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">Measure latency any bridge introduces</text>
+
+  <circle cx="1340" cy="530" r="5" fill="#a78bfa"/>
+  <text x="1356" y="535" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">No external equipment required</text>
+
+  <circle cx="1340" cy="586" r="5" fill="#a78bfa"/>
+  <text x="1356" y="591" font-family="'Segoe UI',Arial,sans-serif" font-size="19" fill="#94a3b8">No clock sync between devices needed</text>
+
+  <!-- key insight -->
+  <rect x="1324" y="780" width="504" height="80" rx="10" fill="#04020c" stroke="#7b2ff7" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="1576" y="812" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#a78bfa" text-anchor="middle" font-style="italic">Self-contained firmware measurement tool</text>
+  <text x="1576" y="836" font-family="'Segoe UI',Arial,sans-serif" font-size="16" fill="#a78bfa" text-anchor="middle" font-style="italic">for any CAN-over-Ethernet bridge</text>
+
+  <!-- bottom bar -->
+  <rect x="0" y="1076" width="1920" height="4" fill="url(#accentLine)"/>
+</svg>

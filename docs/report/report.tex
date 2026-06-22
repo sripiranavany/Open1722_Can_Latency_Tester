@@ -1,10 +1,35 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage{graphicx}
-\usepackage{listings} % Required for beautiful code/terminal formatting
-\usepackage{xcolor}   % Required for optional coloring in code blocks
-\usepackage{microtype} % Improves text justification
 
-% Optional: Configure the look of the terminal/service dumps
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage[hyphens]{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage{parskip}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\graphicspath{{../diagrams/}}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+% --- Code listing styles ---
 \lstset{
     basicstyle=\ttfamily\small,
     backgroundcolor=\color{gray!10},
@@ -15,165 +40,1689 @@
     showstringspaces=false
 }
 
+\lstdefinestyle{cstyle}{
+    language=C,
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{gray!8},
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red!70!black},
+    frame=single,
+    breaklines=true,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keepspaces=true,
+    showstringspaces=false
+}
+
 \begin{document}
 
 % ==========================================
-% 1. TITLE PAGE (First Page Only)
+% TITLE PAGE
 % ==========================================
 \begin{titlepage}
     \centering
-    \vspace*{2cm}
-    
-    {\large \textbf{Heilbronn University of Applied Sciences} \par}
+    \vspace*{1.5cm}
+
+    \vspace{1cm}
+
+    {\Large \textbf{Heilbronn University of Applied Sciences (HHN)} \par}
+    {\large Faculty of Informatics \par}
     {\large Course: Real Time Systems \par}
-    
-    \vspace{2.5cm}
-    
+
+    \vspace{2cm}
+
     {\huge \bfseries Open1722 CAN Latency Tests \par}
-    \vspace{0.5cm}
+    \vspace{0.4cm}
+    {\LARGE CAN-over-Ethernet Bridging: Linux vs.\ Zephyr RTOS \par}
+    \vspace{0.3cm}
     {\Large Project Report \par}
-    
+
     \vfill
-    
-    {\large \textbf{Author:}} \\
-    {\large Sripiranavan Yogarajah \par}
-    
+
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+        \textbf{Name} & \textbf{HHN E-Mail} & \textbf{Role} \\
+        \midrule
+        Sripiranavan Yogarajah
+            & sripiranavan.yogarajah@stud.hs-heilbronn.de
+            & Author / Developer \\
+        \midrule
+        Sebastian Schildt
+            & sebastian.schildt@hs-heilbronn.de
+            & Supervisor / Client \\
+        Ulrich Straus
+            & ulrich.straus@hs-heilbronn.de
+            & Supervisor / Client \\
+        \bottomrule
+    \end{tabular}
+
     \vfill
-    
+
     {\large \today \par}
 \end{titlepage}
 
 % ==========================================
-% 2. TABLE OF CONTENTS & PAGE NUMBERS SECTION
+% TABLE OF CONTENTS
 % ==========================================
 \newpage
-\pagenumbering{roman} % Use Roman numerals for intro pages if desired
+\pagenumbering{roman}
 \tableofcontents
 \clearpage
+\pagenumbering{arabic}
 
 % ==========================================
-% 3. MAIN CONTENT
+% 1. INTRODUCTION
 % ==========================================
-\pagenumbering{arabic} % Switch to regular numbers (1, 2, 3...) for content
-
 \section{Introduction}
-This is the project report for the CAN Latency Tester. Below are the underlying environment configurations and systemd service specifications utilized during the testing setup.
+\label{sec:introduction}
 
-\subsection{System Environment}
-The test environment runs on the following OS distribution release details:
+\subsection{Problem Statement and Motivation}
 
-\begin{lstlisting}[caption={OS Release Information (/etc/os-release)}]
-sripiranavan@sripiranavan:~ $ cat /etc/os-release 
-PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
-NAME="Debian GNU/Linux"
-VERSION_ID="13"
-VERSION="13 (trixie)"
-VERSION_CODENAME=trixie
-DEBIAN_VERSION_FULL=13.4
-ID=debian
-HOME_URL="https://www.debian.org/"
-SUPPORT_URL="https://www.debian.org/support"
-BUG_REPORT_URL="https://bugs.debian.org/"
+In modern automotive and industrial systems, Controller Area Network (CAN) data increasingly
+must be transported across Ethernet backbones \cite{iso11898}.  The \textbf{IEEE~1722}
+standard (also known as AVTP --- Audio Video Transport Protocol) defines how to encapsulate
+real-time data, including CAN frames, into Ethernet packets in a deterministic manner
+\cite{ieee1722}.  \textbf{Open1722} is an open-source implementation of IEEE~1722 that runs
+on both Linux (via POSIX sockets) and the Zephyr RTOS \cite{open1722}, making it an ideal
+candidate for a direct latency comparison.
+
+Every gateway that bridges CAN to Ethernet introduces end-to-end \emph{latency} and, more
+critically, \emph{jitter}.  Jitter is the variation in delivery time between consecutive
+frames.  In time-sensitive control loops --- such as motor drives or safety-critical actuators
+--- bounded and predictable latency is mandatory.  An RTOS such as Zephyr \cite{zephyr} is
+designed precisely to provide this determinism, while a general-purpose OS such as Linux
+cannot guarantee worst-case interrupt or scheduling latency.
+
+The core \textbf{research question} of this project is:
+\begin{quote}
+\emph{How much latency and jitter does an IEEE-1722 CAN-over-Ethernet gateway introduce,
+and how do the Linux and Zephyr RTOS implementations of Open1722 compare in this regard?}
+\end{quote}
+
+\subsection{Project Goals}
+
+\begin{enumerate}
+    \item Deploy \textbf{Open1722} on a Raspberry Pi~4 (Linux) to forward CAN frames over
+          Ethernet via IEEE-1722 AVTP and measure the resulting round-trip latency.
+    \item Design a \textbf{self-contained latency measurement system} on an
+          STM32F439ZI~\cite{stm32rm} that uses a hardware timer for microsecond-precision
+          timestamps, eliminating the need for cross-node clock synchronisation.
+    \item Build a \textbf{second bridge configuration} using three STM32F439ZI boards
+          (all running Zephyr RTOS) to test a pure-RTOS forwarding path with no Linux
+          scheduler involvement.
+    \item Implement a \textbf{real-time monitoring stack}
+          (Telegraf~\cite{telegraf} $\rightarrow$ InfluxDB~\cite{influxdb} $\rightarrow$
+          Grafana~\cite{grafana}) that ingests per-frame statistics directly from the
+          STM32 serial port.
+    \item \textbf{Compare} the latency and jitter results from both configurations and
+          identify optimisation steps to reduce worst-case behaviour.
+\end{enumerate}
+
+\subsection{Scope}
+
+This report covers both configurations in full: the Linux-gateway pipeline (hardware setup,
+firmware, monitoring stack, and measurement runs) and the all-Zephyr STM32-to-STM32
+pipeline (architecture, implementation, and a comparative measurement run conducted on
+June~18, 2026).  Three measurement runs are presented and compared.
+
+% ==========================================
+% 2. TEAM AND WORK DISTRIBUTION
+% ==========================================
+\section{Team and Work Distribution}
+\label{sec:team}
+
+This project was carried out as a \textbf{solo project} by Sripiranavan Yogarajah under
+the supervision of Prof.\ Sebastian Schildt and Prof.\ Ulrich Straus of Heilbronn
+University of Applied Sciences.
+
+\begin{table}[H]
+    \centering
+    \caption{Work Distribution}
+    \label{tab:workdist}
+    \begin{tabularx}{\textwidth}{|l|X|}
+        \hline
+        \textbf{Contributor} & \textbf{Contributions} \\
+        \hline
+        Sripiranavan Yogarajah &
+            Hardware procurement and wiring; Zephyr RTOS firmware
+            (\texttt{main.c}, \texttt{can\_handler.c}, \texttt{stats.c},
+            \texttt{timestamp.c}, \texttt{button.c}); Open1722 build and
+            systemd integration on Raspberry Pi; Docker-based monitoring
+            stack (Telegraf, InfluxDB, Grafana); measurement campaigns;
+            project documentation and this report. \\
+        \hline
+        Sebastian Schildt &
+            Project client; requirement definition; review of interim
+            results at milestones. \\
+        \hline
+        Ulrich Straus &
+            Project client; requirement definition; review of interim
+            results at milestones. \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+% ==========================================
+% 3. HARDWARE AND SOFTWARE COMPONENTS
+% ==========================================
+\section{Hardware and Software Components}
+\label{sec:components}
+
+\subsection{Hardware Components}
+
+Table~\ref{tab:hardware} lists all hardware components used across both test configurations.
+
+\begin{table}[H]
+    \centering
+    \caption{Hardware Bill of Materials}
+    \label{tab:hardware}
+    \begin{tabularx}{\textwidth}{|l|c|X|}
+        \hline
+        \textbf{Component} & \textbf{Qty} & \textbf{Description and Role} \\
+        \hline
+        Raspberry Pi 4 Model B~\cite{rpi4} & 2 &
+            Quad-core ARM Cortex-A72 single-board computer running
+            Debian GNU/Linux 13 (Trixie).  Hosts the Open1722
+            \texttt{acf-can-bridge} process for CAN-to-Ethernet forwarding. \\
+        \hline
+        STM32F439ZI Nucleo-144~\cite{stm32rm} & 3 &
+            ARM Cortex-M4F at up to 180\,MHz.  Board~1 is the latency
+            measurement node (CAN1~TX + CAN2~RX, same chip).  Boards~2
+            and~3 are the Zephyr-based bridge endpoints in
+            Configuration~2. \\
+        \hline
+        MCP2515 CAN HAT & 2 &
+            SPI-connected CAN controller daughter board for Raspberry Pi.
+            Provides SocketCAN (\texttt{can0}/\texttt{can1}) under Linux
+            at up to 1\,Mbit/s. \\
+        \hline
+        SN65HVD230 CAN Transceiver & 4 &
+            3.3\,V-compatible ISO~11898-2 physical-layer transceiver.
+            Converts the STM32's logic-level bxCAN signals to differential
+            CANH/CANL bus voltages. \\
+        \hline
+        LAN8720 Ethernet PHY & 2 &
+            10/100\,Mbit/s RMII PHY used by STM32 boards~2 and~3 to
+            provide a physical Ethernet port without requiring a Linux
+            network stack. \\
+        \hline
+        $120\,\Omega$ Termination Resistors & 4 &
+            CAN bus termination at both ends of each bus segment to
+            prevent signal reflections as per ISO~11898 \cite{iso11898}. \\
+        \hline
+        USB-CAN Adapter (UCAN) & 1 &
+            Passive bus monitor for non-intrusive packet sniffing and
+            hardware-level timestamp capture via \texttt{candump}. \\
+        \hline
+        Direct Ethernet Cables & 2 &
+            100Base-TX crossover-compatible cables connecting
+            RPi\,1$\leftrightarrow$RPi\,2 (Configuration~1) and
+            STM32\,\#2$\leftrightarrow$STM32\,\#3 (Configuration~2). \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\subsection{Software Components}
+
+\begin{table}[H]
+    \centering
+    \caption{Software Stack}
+    \label{tab:software}
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Software} & \textbf{Version} & \textbf{Purpose and Rationale} \\
+        \hline
+        Debian GNU/Linux~\cite{debian} & 13 (Trixie) &
+            OS for Raspberry Pi hosts.  Chosen because it provides
+            up-to-date SocketCAN support, systemd for service supervision,
+            and the \texttt{SCHED\_FIFO} scheduler policy for
+            quasi-real-time process pinning. \\
+        \hline
+        Zephyr RTOS~\cite{zephyr} & 3.x (latest stable) &
+            RTOS on all STM32 nodes.  Provides deterministic interrupt
+            latency, the hardware-agnostic \texttt{counter} API for
+            microsecond-precision timestamps, and a CAN driver layer
+            that exposes the STM32 bxCAN peripheral. \\
+        \hline
+        Open1722~\cite{open1722} & Custom build &
+            Open-source C library implementing IEEE~1722 AVTP
+            encapsulation and decapsulation.  Used on both Linux
+            (POSIX socket backend) and Zephyr (Zephyr network stack
+            backend). \\
+        \hline
+        West (Zephyr build tool) & bundled &
+            Zephyr's meta-tool for CMake builds, flashing via
+            \texttt{OpenOCD}/\texttt{STM32CubeProgrammer}, and
+            workspace management. \\
+        \hline
+        Docker / Compose~\cite{docker} & 24 / v2 &
+            Container runtime for the three-service monitoring stack
+            (InfluxDB, Telegraf, Grafana) to ensure reproducibility
+            across host machines. \\
+        \hline
+        InfluxDB~\cite{influxdb} & 2.7 &
+            Time-series database.  Selected over alternatives (Prometheus,
+            TimescaleDB) because of native support for high-frequency
+            integer metrics, the Flux query language, and tight Grafana
+            integration. \\
+        \hline
+        Telegraf~\cite{telegraf} & 1.30 &
+            Metrics collection agent.  The \texttt{execd} input plugin
+            reads the STM32 USB-CDC serial port and parses CSV lines
+            into InfluxDB line protocol without any custom glue code. \\
+        \hline
+        Grafana~\cite{grafana} & 10.4 &
+            Visualisation platform.  Dashboard auto-provisioned from a
+            JSON file for zero-configuration startup. \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+% ==========================================
+% 4. SYSTEM DESIGN
+% ==========================================
+\section{System Design}
+\label{sec:design}
+
+\subsection{Design Rationale: Single-Board Round-Trip Measurement}
+
+The fundamental challenge in CAN latency measurement is \emph{clock synchronisation}.
+If TX and RX timestamps come from two clocks on different boards, any crystal drift between
+them corrupts the reading.  Common solutions --- PTP (IEEE~1588) or GPS-disciplined clocks ---
+require additional hardware and complex software setup.
+
+The design adopted here eliminates the problem entirely: the \textbf{same
+STM32F439ZI} board is both the CAN transmitter (via CAN1) and the ultimate receiver
+(via CAN2).  Both timestamps are read from the same TIM2 hardware counter, so clock
+drift is identically zero by construction.  The measured quantity is therefore the true
+\emph{round-trip} propagation delay from the moment \texttt{can\_send()} is called until
+the matching frame arrives at \texttt{can\_rx\_callback()}.
+
+\subsection{Configuration 1 --- Linux Gateway}
+\label{sec:config1}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth,height=0.78\textheight,keepaspectratio]{01_main_pipeline}
+    \caption{Round-trip CAN latency measurement pipeline with Linux gateway
+             (Raspberry Pi~4 + Open1722) \cite{open1722}.}
+    \label{fig:main_pipeline}
+\end{figure}
+
+Figure~\ref{fig:main_pipeline} shows the complete data flow:
+
+\begin{enumerate}
+    \item \textbf{STM32 CAN1 TX} (PD1 / CN9-8): The measurement firmware sends an 8-byte
+          standard CAN frame (ID~\texttt{0x123}) at 250\,kbps.  Bytes~0--3 hold the
+          hardware timer tick value captured immediately before \texttt{can\_send()};
+          bytes~4--7 hold a monotonically increasing 32-bit sequence number used for
+          packet-loss detection.
+    \item \textbf{Raspberry Pi~1}: Receives the frame via the MCP2515 HAT over SPI into
+          the Linux SocketCAN stack (\texttt{can1}).  The Open1722
+          \texttt{acf-can-bridge} process reads the frame from a SocketCAN raw socket,
+          encapsulates it into an IEEE-1722 ACF-CAN PDU, and transmits it as a raw
+          Ethernet frame to Pi~2's MAC address over a direct cable.
+    \item \textbf{Raspberry Pi~2}: The bridge process receives the IEEE-1722 Ethernet
+          frame on \texttt{eth0}, decapsulates the CAN payload using Open1722, and
+          injects the reconstructed frame onto CAN Bus~B via the second MCP2515 HAT.
+    \item \textbf{STM32 CAN2 RX} (PB5 / CN7): The Zephyr CAN driver fires the
+          registered RX callback as a high-priority ISR.  The very first instruction
+          captures the hardware timer tick value $t_1$.  The latency
+          $\Delta t = t_1 - t_0$ is computed in ticks and converted to microseconds
+          by the Zephyr \texttt{counter} API, then statistics are updated and one
+          CSV line is emitted to the serial port.
+\end{enumerate}
+
+\textbf{Rationale for component choices:}
+\begin{itemize}
+    \item \emph{250\,kbps bus speed}: Selected to match a common automotive low-speed
+          CAN configuration and to keep the per-frame bit time ($444\,\mu$s for an
+          8-byte frame at 250\,kbps) large enough to be clearly visible in latency measurements.
+    \item \emph{Direct Ethernet cable}: Removes switch-induced variable queuing delays
+          from the measurement, isolating gateway overhead only.
+    \item \emph{MCP2515 HAT}: Off-the-shelf SocketCAN-compatible hardware that allows
+          Open1722 to operate unchanged on Linux without any driver modifications.
+\end{itemize}
+
+\subsection{Configuration 2 --- All-Zephyr Gateway (STM32-to-STM32)}
+\label{sec:config2}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth,height=0.78\textheight,keepaspectratio]{02_stm32_to_stm32_full_zephyr}
+    \caption{All-Zephyr bridging pipeline: STM32 \#1 (measurement) $\rightarrow$
+             STM32 \#2 (ingress bridge) $\rightarrow$ STM32 \#3 (egress bridge)
+             $\rightarrow$ STM32 \#1 (receive).}
+    \label{fig:stm32_to_stm32}
+\end{figure}
+
+Configuration~2 (Figure~\ref{fig:stm32_to_stm32}) replaces both Raspberry Pi boards with
+two additional STM32F439ZI Nucleo-144 boards running Zephyr RTOS.  The goal is to remove
+the Linux kernel scheduler entirely from the forwarding path:
+
+\begin{enumerate}
+    \item \textbf{STM32 \#1} --- same measurement firmware as Configuration~1.  Sends on
+          CAN Bus~A and receives on CAN Bus~B.
+    \item \textbf{STM32 \#2} (ingress bridge): CAN1 receives the frame via the bxCAN
+          peripheral interrupt; the Zephyr Open1722 library encapsulates it into an
+          IEEE-1722 AVTP PDU; the Zephyr network stack transmits it over the LAN8720
+          PHY via a direct Ethernet cable.
+    \item \textbf{STM32 \#3} (egress bridge): The Ethernet frame arrives at the LAN8720
+          PHY; Open1722 decapsulates the CAN payload; CAN2 transmits the reconstructed
+          frame onto CAN Bus~B at 250\,kbps.
+    \item \textbf{STM32 \#1 CAN2 RX} closes the loop identically to Configuration~1.
+\end{enumerate}
+
+Since no Linux scheduler operates in the forwarding path, the expected outcome is a
+substantial reduction in worst-case latency and jitter, with only RTOS thread preemption
+(bounded and configurable) as the source of non-determinism.  This was confirmed by the
+measurement campaign conducted on June~18, 2026 (Run~3, Section~\ref{sec:run3}).
+
+\subsection{Measurement Firmware Architecture}
+
+The STM32 measurement firmware (in \texttt{apps/main\_pipeline/src/}) is structured as
+five independent modules communicating only through well-defined APIs:
+
+\begin{center}
+\begin{tabular}{ll}
+    \toprule
+    \textbf{Module} & \textbf{Responsibility} \\
+    \midrule
+    \texttt{main.c}         & System initialisation; 50\,ms TX loop \\
+    \texttt{can\_handler.c} & CAN1 TX, CAN2 RX ISR callback, CSV output \\
+    \texttt{stats.c}        & Running min/max/mean/$\sigma$/jitter/loss \\
+    \texttt{timestamp.c}    & TIM2 abstraction via Zephyr \texttt{counter} API \\
+    \texttt{button.c}       & USER BUTTON start/pause and stats printout \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Hardware Timer and Timestamping}
+
+TIM2 on the STM32F439ZI is configured as a free-running 32-bit counter driven by the
+APB1 timer clock \cite{stm32rm}.  The device tree overlay sets the system PLL to:
+
+\[
+f_{\text{core}} = \frac{f_{\text{HSE}}}{M} \times N \div P
+= \frac{8\,\text{MHz}}{8} \times 360 \div 2 = 180\,\text{MHz}
+\]
+
+With APB1 prescaler $= 4$, the APB1 timer clock is $90\,\text{MHz}$, giving a tick
+resolution of $\approx 11.1\,\text{ns}$.  The 32-bit counter wraps every $\approx 47$
+seconds --- well beyond any single test run.  Tick-delta subtraction uses unsigned integer
+underflow to handle wraparound correctly.
+
+\begin{lstlisting}[style=cstyle, caption={timestamp.c --- TIM2 initialisation and tick capture}]
+void timestamp_init(void) {
+    struct counter_top_cfg top_cfg = {
+        .ticks = counter_get_max_top_value(counter_dev),
+    };
+    counter_set_top_value(counter_dev, &top_cfg);
+    counter_start(counter_dev);
+}
+
+uint32_t get_hw_timestamp_ticks(void) {
+    uint32_t ticks;
+    counter_get_value(counter_dev, &ticks);
+    return ticks;
+}
+
+uint32_t ticks_to_us(uint32_t ticks) {
+    return counter_ticks_to_us(counter_dev, ticks);
+}
 \end{lstlisting}
 
-\subsection{Network and Bridge Configuration}
-To initialize the Controller Area Network (CAN) interface at a bitrate of 250,000 bps, the following systemd service is deployed:
+\subsubsection{CAN Frame Format and TX}
 
-\begin{lstlisting}[caption={CAN1 Interface Service (can1.service)}]
-sripiranavan@sripiranavan:/etc/systemd/system $ cat can1.service 
+Each transmitted frame carries the TX tick value and the sequence number packed into the
+8-byte data field:
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+    \hline
+    \multicolumn{4}{|c|}{\textbf{Bytes 0--3}} & \multicolumn{4}{c|}{\textbf{Bytes 4--7}} \\
+    \hline
+    \multicolumn{4}{|c|}{\texttt{tx\_ticks} (uint32, little-endian)} &
+    \multicolumn{4}{c|}{\texttt{seq\_num} (uint32, little-endian)} \\
+    \hline
+\end{tabular}
+\end{center}
+
+The TX timestamp is captured as the last step before \texttt{can\_send()}, after the
+payload has been assembled, to minimise the time gap between the captured tick and
+the actual moment of bus access:
+
+\begin{lstlisting}[style=cstyle, caption={can\_handler.c --- TX frame construction}]
+int can_send_frame(uint32_t seq_num) {
+    struct can_frame frame = { .id = 0x123, .dlc = 8 };
+    memcpy(&frame.data[4], &seq_num, sizeof(uint32_t));
+
+    /* Capture timestamp as late as possible --- right before sending */
+    uint32_t tx_ticks = get_hw_timestamp_ticks();
+    memcpy(frame.data, &tx_ticks, sizeof(uint32_t));
+
+    return can_send(can1_dev, &frame, K_MSEC(100), NULL, NULL);
+}
+\end{lstlisting}
+
+\subsubsection{RX Callback and Latency Computation}
+
+\begin{lstlisting}[style=cstyle, caption={can\_handler.c --- RX ISR callback}]
+static void can_rx_callback(const struct device *dev,
+                             struct can_frame *frame, void *user_data)
+{
+    /* First instruction: capture RX timestamp before anything else */
+    uint32_t rx_ticks = get_hw_timestamp_ticks();
+
+    uint32_t tx_ticks, rx_seq_num;
+    memcpy(&tx_ticks,   frame->data,     4);
+    memcpy(&rx_seq_num, &frame->data[4], 4);
+
+    /* Unsigned underflow handles 32-bit counter wraparound */
+    uint32_t latency_us = ticks_to_us(rx_ticks - tx_ticks);
+    uint32_t jitter_us  = stats_record(latency_us, rx_seq_num);
+
+    can_stats_snapshot_t snap;
+    stats_get_snapshot(&snap);
+
+    printk("CSV,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
+           rx_seq_num, tx_ticks, rx_ticks,
+           latency_us, jitter_us,
+           snap.min_us, snap.max_us, snap.mean_us, snap.stddev_us,
+           snap.count, snap.lost);
+}
+\end{lstlisting}
+
+\subsubsection{On-Device Statistics}
+
+All statistics are computed on the STM32 in pure integer arithmetic --- no FPU dependency ---
+to maintain portability across Cortex-M targets:
+
+\begin{center}
+\begin{tabular}{ll}
+    \toprule
+    \textbf{Statistic} & \textbf{Formula / Implementation} \\
+    \midrule
+    Min / Max    & Running update per frame \\
+    Mean         & $\bar{\mu} = \sum \text{lat} \,/\, n$ (integer division) \\
+    Jitter       & $|\text{lat}_i - \text{lat}_{i-1}|$; mean accumulated over $n-1$ frames \\
+    Packet loss  & Sequence gap detection: \texttt{rx\_seq} $\neq$ \texttt{last\_rx\_seq + 1} \\
+    Std deviation & $\sigma = \sqrt{E[X^2] - (E[X])^2}$ via Newton's-method
+                   \texttt{isqrt64()} (6 iterations) \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Kconfig and Device Tree}
+
+Key Kconfig options that influence latency behaviour:
+
+\begin{lstlisting}[caption={prj.conf --- options affecting determinism}]
+CONFIG_LOG_MODE_DEFERRED=y   # log to ring buffer; flush in idle thread
+CONFIG_CAN_INIT_PRIORITY=41  # raise CAN IRQ priority above default
+CONFIG_SCHED_SCALABLE=y      # O(1) scheduler
+CONFIG_TIMESLICING=n         # disable preemptive time-slicing
+\end{lstlisting}
+
+Device tree configures CAN1/CAN2 at 250\,kbps with an 87.5\,\% sample point:
+
+\begin{lstlisting}[caption={nucleo\_f439zi.overlay --- CAN and PLL configuration}]
+&can1 { bus-speed = <250000>; sample-point = <875>; };
+&can2 { bus-speed = <250000>; sample-point = <875>; };
+
+&pll { div-m = <8>; mul-n = <360>; div-p = <2>; }; /* 180 MHz */
+&rcc { clock-frequency = <DT_FREQ_M(180)>;
+       apb1-prescaler = <4>; apb2-prescaler = <2>; };
+\end{lstlisting}
+
+\subsection{Bridge Firmware --- Board~2 (CAN \texorpdfstring{$\rightarrow$}{->} AVTP)}
+\label{sec:board2fw}
+
+Board~2 receives CAN frames from CAN Bus~A and forwards them over Ethernet as IEEE-1722
+AVTP frames.  The firmware is structured across four modules:
+
+\textbf{Main forwarding loop} (\texttt{board2/main.c}): The loop blocks on a Zephyr
+message queue, consuming no CPU until a frame arrives, then builds and transmits the
+AVTP packet:
+
+\begin{lstlisting}[style=cstyle, caption={board2/main.c --- CAN-to-AVTP forwarding loop}]
+while (1) {
+    ret = k_msgq_get(&can_rx_msgq, &cf, K_FOREVER);
+    if (ret != 0) continue;
+
+    int len = avtp_build_frame(pdu, seq_num++, &cf);
+
+    ret = sendto(sock, pdu, len, 0,
+                 (struct sockaddr *)&sk_addr, sizeof(sk_addr));
+}
+\end{lstlisting}
+
+\textbf{CAN receive} (\texttt{board2/can\_handler.c}): Unlike the measurement board
+which uses a manual ISR callback, board~2 uses \texttt{can\_add\_rx\_filter\_msgq()}.
+This Zephyr API atomically enqueues received frames into a message queue from interrupt
+context, keeping the bridge thread entirely out of ISR context --- a safer pattern for
+a forwarding application:
+
+\begin{lstlisting}[style=cstyle, caption={board2/can\_handler.c --- message-queue receive filter}]
+CAN_MSGQ_DEFINE(can_rx_msgq, CAN_RX_QUEUE_SZ);
+
+int can_init(void) {
+    can_add_rx_filter_msgq(can1_dev, &can_rx_msgq, &filter);
+    return can_start(can1_dev);
+}
+\end{lstlisting}
+
+\textbf{AVTP frame builder} (\texttt{board2/avtp\_handler.c}): The IEEE-1722 NTSCF
+and GPC structures are filled using the Open1722 API.  The NTSCF carries its own
+sequence number for Ethernet-level drop detection, independent of the CAN sequence
+number inside the payload:
+
+\begin{lstlisting}[style=cstyle, caption={board2/avtp\_handler.c --- NTSCF/GPC frame construction}]
+int avtp_build_frame(uint8_t *pdu, uint8_t seq_num,
+                     const struct can_frame *cf) {
+    Avtp_Ntscf_t *ntscf = (Avtp_Ntscf_t *)pdu;
+    Avtp_Ntscf_Init(ntscf);
+    Avtp_Ntscf_SetSequenceNum(ntscf, seq_num);
+    Avtp_Ntscf_SetStreamId(ntscf, STREAM_ID);
+
+    Avtp_Gpc_t *gpc = (Avtp_Gpc_t *)(pdu + AVTP_NTSCF_HEADER_LEN);
+    Avtp_Gpc_Init(gpc);
+    /* pack CAN ID, DLC, and data[0..7] into GPC payload */
+    return AVTP_NTSCF_HEADER_LEN + AVTP_GPC_HEADER_LEN + cf->dlc;
+}
+\end{lstlisting}
+
+\textbf{Raw Ethernet socket} (\texttt{board2/net\_handler.c}): An \texttt{AF\_PACKET}
+socket with EtherType \texttt{0x22F0} sends the frame directly to the IEEE-1722 AVTP
+multicast address \texttt{01:1B:19:00:00:00}, bypassing the IP stack entirely:
+
+\begin{lstlisting}[style=cstyle, caption={board2/net\_handler.c --- raw Ethernet socket setup}]
+int sock = socket(AF_PACKET, SOCK_DGRAM, htons(ETH_P_TSN));
+
+sk_addr.sll_family   = AF_PACKET;
+sk_addr.sll_protocol = htons(ETH_P_TSN);   /* EtherType 0x22F0 */
+uint8_t dst_mac[] = { 0x01, 0x1B, 0x19, 0x00, 0x00, 0x00 };
+memcpy(sk_addr.sll_addr, dst_mac, NET_ETH_ADDR_LEN);
+\end{lstlisting}
+
+\subsection{Bridge Firmware --- Board~3 (AVTP \texorpdfstring{$\rightarrow$}{->} CAN)}
+\label{sec:board3fw}
+
+Board~3 is the egress bridge.  Its main loop blocks on a raw Ethernet \texttt{recv()}
+call and, for each valid AVTP frame, reconstructs and transmits the original CAN frame
+onto CAN Bus~B:
+
+\begin{lstlisting}[style=cstyle, caption={board3/main.c --- AVTP-to-CAN listener loop}]
+while (1) {
+    ret = recv(sock, pdu, sizeof(pdu), 0);
+    if (ret < 0) continue;
+
+    if (avtp_parse_frame(pdu, ret, &ts_us, &can_seq,
+                         &can_id, &avtp_seq) != 0)
+        continue;
+
+    can_send_return(ts_us, can_seq);
+}
+\end{lstlisting}
+
+The AVTP parser (\texttt{board3/avtp\_handler.c}) validates the NTSCF header and
+stream~ID, then extracts the original CAN payload.  The critical invariant is that
+the TX timestamp packed into \texttt{data[0..3]} by board~1 passes through both bridges
+\emph{completely untouched} --- neither board~2 nor board~3 reads or modifies it:
+
+\begin{lstlisting}[style=cstyle, caption={board3/avtp\_handler.c --- CAN payload extraction}]
+int avtp_parse_frame(const uint8_t *pdu, int len,
+                     uint32_t *ts_us_out, uint32_t *can_seq_out, ...) {
+    const Avtp_Ntscf_t *ntscf = (const Avtp_Ntscf_t *)pdu;
+    if (!Avtp_Ntscf_IsValid(ntscf, len))        return -1;
+    if (Avtp_Ntscf_GetStreamId(ntscf) != STREAM_ID) return -1;
+
+    const Avtp_Gpc_t *gpc =
+        (Avtp_Gpc_t *)(pdu + AVTP_NTSCF_HEADER_LEN);
+    memcpy(ts_us_out,   &cpkt.data[0], 4);  /* original TX timestamp */
+    memcpy(can_seq_out, &cpkt.data[4], 4);  /* original CAN seq num */
+    return 0;
+}
+\end{lstlisting}
+
+The full timestamp traversal chain:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{l}
+Board~1 captures \texttt{tx\_ticks}, packs into \texttt{frame.data[0..3]}, sends on CAN Bus~A \\
+$\downarrow$ \\
+Board~2: reads frame, embeds entire \texttt{data[0..7]} unmodified into AVTP/GPC payload, sends Ethernet \\
+$\downarrow$ \\
+Board~3: receives Ethernet, extracts \texttt{data[0..7]} unchanged, sends CAN frame on Bus~B \\
+$\downarrow$ \\
+Board~1: receives on CAN2, reads \texttt{tx\_ticks} from \texttt{frame.data[0..3]},
+computes $\Delta t = t_{\text{now}} - t_{\text{tx}}$ \\
+\end{tabular}
+\end{center}
+
+\subsection{Monitoring Stack Design}
+
+\begin{lstlisting}
+STM32 USB-CDC (/dev/ttyACM0, 115200 baud)
+  |
+  v  [stty raw + grep '^CSV,']
+Telegraf 1.30  (inputs.execd, data_format = "csv")
+  |
+  v
+InfluxDB v2.7  (bucket: can_latency, retention: 30 days)
+  |
+  v
+Grafana 10.4   (10-panel dashboard, http://localhost:3000)
+\end{lstlisting}
+
+Every received CAN frame causes the firmware to emit one CSV line.  Telegraf's
+\texttt{execd} plugin passes the line through \texttt{stty}/\texttt{grep} to strip
+non-CSV output, then parses 11 numeric fields into an InfluxDB measurement named
+\texttt{can\_latency}.  The Grafana dashboard is auto-provisioned from a JSON file so
+the stack is fully operational with a single \texttt{docker compose up -d}.
+
+% ==========================================
+% 5. IEEE-1722 AVTP PROTOCOL
+% ==========================================
+\section{IEEE-1722 AVTP Protocol}
+\label{sec:avtp}
+
+\subsection{Protocol Overview}
+
+IEEE~1722 (AVTP --- Audio Video Transport Protocol) is an IEEE standard for
+transporting time-sensitive data --- including audio, video, and control data such as
+CAN frames --- over IEEE~802.3 Ethernet networks~\cite{ieee1722}.  It operates at
+\textbf{OSI Layer~2} (the Ethernet data link layer) and carries the registered
+EtherType \texttt{0x22F0} (Time-Sensitive Networking).
+
+This is a fundamental distinction from the more familiar UDP/IP stack, which operates
+at Layer~4.  Table~\ref{tab:avtp_vs_udp} compares both approaches in the context of
+CAN bridging.
+
+\begin{table}[H]
+    \centering
+    \caption{IEEE-1722 AVTP versus UDP/IP for CAN-over-Ethernet bridging}
+    \label{tab:avtp_vs_udp}
+    \begin{tabularx}{\textwidth}{|l|X|X|}
+        \hline
+        \textbf{Property} & \textbf{UDP/IP} & \textbf{IEEE-1722 AVTP} \\
+        \hline
+        OSI Layer & Layer~4 (Transport) & Layer~2 (Data Link) \\
+        \hline
+        Header overhead & 28\,bytes (8 UDP + 20 IPv4) & $\approx$12\,bytes (NTSCF) \\
+        \hline
+        Addressing & IP address + port & MAC address only \\
+        \hline
+        Routing & Passes through IP routers & Same Ethernet segment only \\
+        \hline
+        OS network stack path & Full IP stack + socket buffers & Raw socket $\to$ hardware \\
+        \hline
+        Timing guarantee & None & Designed for TSN priority queues \\
+        \hline
+        Built-in sequence number & No & Yes --- in AVTP header \\
+        \hline
+        Socket type used & \texttt{SOCK\_DGRAM} / \texttt{AF\_INET} & \texttt{SOCK\_DGRAM} / \texttt{AF\_PACKET} \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+For a CAN bridge on a direct point-to-point Ethernet cable, IEEE-1722 AVTP is the
+correct protocol choice: lower overhead, no IP routing delay, and the built-in sequence
+number allows independent detection of Ethernet-level frame drops, separate from CAN
+frame loss detection.
+
+\subsection{Frame Structure Used in This Project}
+
+This project uses the NTSCF (Non-Time-Sensitive Control Format) sub-type of IEEE~1722,
+which is designed for low-rate, non-isochronous control data such as CAN, LIN, and I2C.
+Each transmitted Ethernet frame has the following layered structure:
+
+\begin{table}[H]
+    \centering
+    \caption{AVTP NTSCF/GPC frame structure as used in this project}
+    \label{tab:avtp_frame}
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Layer} & \textbf{Size} & \textbf{Content} \\
+        \hline
+        Ethernet header & 14\,bytes & Dst MAC \texttt{01:1B:19:00:00:00}, Src MAC, EtherType \texttt{0x22F0} \\
+        \hline
+        AVTP NTSCF header & 12\,bytes & Subtype, sequence number (8-bit, wraps), stream ID (64-bit), data length \\
+        \hline
+        AVTP GPC block & 4\,bytes & Generic Protocol Control header (container for raw payload) \\
+        \hline
+        CAN payload & 13\,bytes & CAN ID (4B) + DLC (1B) + \texttt{data[0..7]} (8B) \\
+        \hline
+        \textbf{Total} & \textbf{43\,bytes} & --- \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+The \textbf{NTSCF sequence number} (8-bit, managed by board~2) detects dropped Ethernet
+frames.  It is independent from the 32-bit CAN sequence number packed by board~1 into
+\texttt{data[4..7]}, which detects dropped CAN frames.  Both counters are validated
+separately at the receiving side.
+
+\subsection{Why AVTP Reduces Non-Determinism}
+
+When data is sent over UDP/IP, the kernel path is:
+
+\begin{center}
+application buffer $\to$ socket send queue $\to$ IP fragmentation $\to$
+routing table lookup $\to$ ARP resolution $\to$ NIC queue $\to$ hardware
+\end{center}
+
+Each stage introduces potential delay: ARP can block until a reply arrives, the routing
+table lookup may evict a cache entry, and socket buffers introduce back-pressure that
+pauses the sending thread.
+
+With a raw AVTP socket (\texttt{AF\_PACKET}), the path collapses to:
+
+\begin{center}
+application buffer $\to$ NIC queue $\to$ hardware
+\end{center}
+
+IP, ARP, and routing are bypassed entirely.  This is structurally shorter and more
+predictable, and is one reason the Zephyr bridge (Run~3) achieves 141\,$\mu$s worst-case
+jitter compared to 930\,$\mu$s for the Linux bridge (Run~2) --- both use Open1722 over
+the same physical cable.
+
+% ==========================================
+% 6. PROJECT EVOLUTION
+% ==========================================
+\section{Project Evolution}
+\label{sec:evolution}
+
+The project went through five clearly distinct phases.  This section describes what was
+tried, what failed, and what led to the final design.
+
+\subsection{Phase 1 --- Hardware Setup and CAN Bus Verification (March 2026)}
+
+The first two weeks were spent assembling the hardware and verifying the physical CAN bus.
+
+\textbf{Approach:} Breadboard wiring of the SN65HVD230 transceivers, manual \texttt{ip link}
+commands to bring up SocketCAN on the Raspberry Pi, and \texttt{cansend}/\texttt{candump}
+to verify that frames were reaching the bus.
+
+\textbf{Issue encountered:} The MCP2515 HAT initially failed to produce frames.
+Investigation revealed that the default SPI clock (5\,MHz) was too fast for the cable
+length used.  Reducing the SPI clock to 1\,MHz resolved the issue.
+
+\textbf{Outcome:} Both Raspberry Pi boards could send and receive CAN frames at 250\,kbps
+with zero errors.
+
+\subsection{Phase 2 --- Open1722 Integration on Linux (April 2026, Weeks 1--2)}
+
+\textbf{Approach:} The Open1722 \texttt{acf-can-bridge} example was compiled from source
+on both Raspberry Pi boards.  Two systemd service files were written to start the bridge
+automatically: \texttt{can1.service} (brings up the SocketCAN interface) and
+\texttt{acf-can-bridge.service} (starts the forwarding process).
+
+\textbf{Issue encountered:} The bridge ran correctly when invoked manually but the
+systemd service failed to start because the CAN interface was not ready when the bridge
+process launched.  The fix was adding \texttt{After=can1.service} and
+\texttt{Wants=can1.service} to the bridge service unit.
+
+\textbf{Outcome:} End-to-end forwarding was confirmed using \texttt{cansend} on
+Pi~1 and \texttt{candump} on Pi~2.
+
+\begin{lstlisting}[caption={Service dependency fix in acf-can-bridge.service}]
 [Unit]
-Description=Bring up CAN1 interface
+After=can1.service network-online.target
+Wants=can1.service network-online.target
+\end{lstlisting}
+
+\subsection{Phase 3 --- STM32 Firmware and First Latency Measurements (April 2026, Weeks 3--4)}
+
+\textbf{Approach:} The Zephyr firmware was written iteratively.  The first prototype
+used \texttt{k\_\allowbreak cycle\_\allowbreak get\_\allowbreak 32()} for timestamping,
+but this is tied to the Zephyr system tick rather than a free-running hardware counter.
+
+\textbf{Issue encountered:} The resolution of
+\texttt{k\_\allowbreak cycle\_\allowbreak get\_\allowbreak 32()} depends on the
+\texttt{CONFIG\_\allowbreak SYS\_\allowbreak CLOCK\_\allowbreak HW\_\allowbreak
+CYCLES\_\allowbreak PER\_\allowbreak SEC} Kconfig symbol, which was set to the system
+timer (1\,MHz tick).  This gave only microsecond resolution with no sub-microsecond
+accuracy.  More critically, the Zephyr kernel uses the same cycle counter internally
+for scheduling, causing interference with the measurement.
+
+\textbf{Redesign:} Switched to the Zephyr \texttt{counter} API bound to TIM2 via
+\texttt{DT\_NODELABEL(counter2)}.  TIM2 runs at the APB1 timer clock (90\,MHz after
+PLL configuration), giving $\approx 11\,\text{ns}$ resolution with zero coupling to
+the kernel scheduler.
+
+\textbf{Run 1 results (April 14, 2026):} 10{,}038 frames, mean latency 1{,}245\,$\mu$s,
+max latency 8{,}942\,$\mu$s, max jitter 7{,}700\,$\mu$s.  The high worst-case values
+were attributed to Linux scheduler preemption on the Raspberry Pi (the bridge process
+is a normal POSIX process with no real-time priority).
+
+\subsection{Phase 4 --- Optimisation and Monitoring Stack (May--June 2026)}
+
+\textbf{Linux-side optimisation:}  The Open1722 bridge process was relaunched with
+\texttt{SCHED\_FIFO} priority and CPU pinning (\texttt{chrt -f 50 taskset -c 2}),
+and the network receive interrupt was pinned to the same CPU core.
+
+\textbf{Zephyr-side optimisation:}  Three Kconfig changes were made:
+\texttt{CONFIG\_LOG\_MODE\_DEFERRED=y} (logging now occurs in the idle thread rather
+than blocking the CAN ISR), \texttt{CONFIG\_TIMESLICING=n} (eliminates periodic
+preemption of the main TX thread), and \texttt{CONFIG\_CAN\_INIT\_PRIORITY=41}
+(raises the CAN controller interrupt priority above peripherals that were inadvertently
+sharing a priority group).
+
+\textbf{Monitoring stack:}  A Docker Compose file was written that brings up
+InfluxDB~2.7, Telegraf~1.30, and Grafana~10.4 with a single command.  Telegraf's
+\texttt{execd} input plugin was configured to read the STM32 serial port directly,
+replacing an earlier Python bridge script that introduced its own polling jitter.
+
+\textbf{Configuration~2 (STM32-to-STM32):}  The all-Zephyr bridge firmware for boards~2
+and~3 was implemented during this phase.  Both boards compile and flash successfully and
+were validated for basic CAN$\rightarrow$Ethernet$\rightarrow$CAN forwarding.
+
+\subsection{Phase 5 --- Comparative Measurement Campaign (June 18, 2026)}
+
+Both configurations were measured on the same day under identical conditions
+(250\,kbps, 50\,ms TX interval, direct Ethernet cable) to enable a direct comparison.
+
+\textbf{Run~2 (Linux RPi bridge):} 562 frames, mean latency 1{,}174\,$\mu$s, max
+latency 2{,}090\,$\mu$s, max jitter 930\,$\mu$s.  Five latency spikes were observed,
+consistent with Linux scheduler preemption of the bridge process.
+
+\textbf{Run~3 (Zephyr STM32 bridge):} 10{,}016 frames, mean latency 1{,}118\,$\mu$s,
+max latency 1{,}254\,$\mu$s, max jitter 141\,$\mu$s.  No latency spikes above 1.30\,ms
+were observed.  The entire distribution fits within a 161\,$\mu$s window, confirming the
+deterministic behaviour expected from the Zephyr RTOS forwarding path.
+
+% ==========================================
+% 6. RESULTS AND EVALUATION
+% ==========================================
+\section{Results and Evaluation}
+\label{sec:results}
+
+\subsection{Test Conditions}
+
+\begin{itemize}
+    \item CAN bus speed: 250\,kbps (Bus~A and Bus~B)
+    \item CAN frame ID: \texttt{0x123}; DLC: 8 bytes
+    \item Transmission interval: 50\,ms (20\,frames/sec)
+    \item Measurement board: STM32F439ZI at 180\,MHz core / 90\,MHz TIM2
+    \item Timer resolution: $\approx 11.1\,\text{ns}$ per tick
+    \item Test duration: $\approx 8$ minutes per run ($>10{,}000$ frames)
+    \item All frames acknowledged (no bus-off events)
+\end{itemize}
+
+\subsection{Run 1 --- Baseline, No Optimisation (April 14, 2026)}
+
+\begin{table}[H]
+    \centering
+    \caption{Latency statistics, Run~1 (April 14, 2026 --- 10{,}038 messages)}
+    \label{tab:run1}
+    \begin{tabular}{lrr}
+        \toprule
+        \textbf{Metric} & \textbf{Value} & \textbf{Unit} \\
+        \midrule
+        Messages sent     & 10{,}038 & frames \\
+        Messages received & 10{,}038 & frames \\
+        Packet loss       & 0        & --- \\
+        \midrule
+        Minimum latency   & 1{,}141  & $\mu$s \\
+        Maximum latency   & 8{,}942  & $\mu$s \\
+        Average latency   & 1{,}245  & $\mu$s \\
+        Latency range     & 7{,}801  & $\mu$s \\
+        \midrule
+        Average jitter    & 49       & $\mu$s \\
+        Maximum jitter    & 7{,}700  & $\mu$s \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The extreme worst-case values (max latency 8{,}942\,$\mu$s, max jitter 7{,}700\,$\mu$s) are
+consistent with Linux kernel scheduler preemption.  When the Open1722 bridge process is
+descheduled for several milliseconds, the CAN frame waits in the SocketCAN TX queue,
+directly inflating the measured round-trip time.  The mean latency of 1{,}245\,$\mu$s,
+however, is already close to the physical lower bound (see latency budget analysis below).
+
+\subsection{Run 2 --- Linux (RPi) Bridge (June 18, 2026)}
+\label{sec:run2}
+
+\begin{table}[H]
+    \centering
+    \caption{Latency statistics, Run~2 (June 18, 2026 --- 562 frames, Linux RPi bridge,
+             \texttt{main\_stream.csv})}
+    \label{tab:run2}
+    \begin{tabular}{lrr}
+        \toprule
+        \textbf{Metric} & \textbf{Value} & \textbf{Unit} \\
+        \midrule
+        Frames measured   & 562     & frames \\
+        Packet loss       & 0       & --- \\
+        \midrule
+        Minimum latency   & 1{,}140 & $\mu$s \\
+        Maximum latency   & 2{,}090 & $\mu$s \\
+        Mean latency      & 1{,}174 & $\mu$s \\
+        \midrule
+        Latency spikes ($>1.30\,\text{ms}$) & 5 & frames \\
+        Spike values                         & 1{,}470; 1{,}530; 1{,}650; 1{,}730; 2{,}090 & $\mu$s \\
+        Max frame-to-frame jitter            & 930 & $\mu$s \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The baseline latency of $\approx 1{,}170\,\mu$s is stable for the vast majority of frames.
+However, 5 out of 562 frames ($<1\,\%$) experienced latency spikes between 1.47\,ms and
+2.09\,ms.  These spikes are caused by the Linux kernel scheduler preempting the Open1722
+bridge process on the Raspberry Pi to service other kernel activity (interrupts, page
+reclaiming, timer callbacks).  The resulting maximum jitter of 930\,$\mu$s would be
+unacceptable in any real-time control application with a cycle time below 1\,ms.
+
+\subsection{Run 3 --- Zephyr (STM32) Bridge (June 18, 2026)}
+\label{sec:run3}
+
+\begin{table}[H]
+    \centering
+    \caption{Latency statistics, Run~3 (June 18, 2026 --- 10{,}016 frames, all-Zephyr bridge,
+             \texttt{allzephyr.csv})}
+    \label{tab:run3}
+    \begin{tabular}{lrr}
+        \toprule
+        \textbf{Metric} & \textbf{Value} & \textbf{Unit} \\
+        \midrule
+        Frames measured   & 10{,}016 & frames \\
+        Packet loss       & 0        & --- \\
+        \midrule
+        Minimum latency   & 1{,}093  & $\mu$s \\
+        Maximum latency   & 1{,}254  & $\mu$s \\
+        Mean latency      & 1{,}118  & $\mu$s \\
+        Latency range     & 161      & $\mu$s \\
+        \midrule
+        Mean jitter       & 11.6     & $\mu$s \\
+        Maximum jitter    & 141      & $\mu$s \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The all-Zephyr bridge produces a fundamentally different latency distribution.
+The entire measurement dataset --- all 10{,}016 frames --- lies within a 161\,$\mu$s window
+(1{,}093--1{,}254\,$\mu$s) with no spikes above 1.30\,ms.  Maximum observed jitter is
+141\,$\mu$s.  This is the expected consequence of removing the Linux scheduler from the
+forwarding path: the Zephyr RTOS handles the CAN receive interrupt and the Ethernet transmit
+path within deterministic, priority-governed bounds.
+
+An excerpt from the raw data illustrates the tight distribution:
+
+\begin{lstlisting}[caption={Selected rows from Run~3 raw CSV (allzephyr.csv, columns: SEQ,TX\_TIME\_US,RX\_TIME\_US,LATENCY\_US,JITTER\_US)}]
+SEQ,TX_TIME_US,RX_TIME_US,LATENCY_US,JITTER_US
+0,8116431,8117573,1142,0
+1,8167032,8168161,1129,13
+2,8217632,8218778,1146,17
+3,8268232,8269379,1147,1
+...
+2816,7222559,7223813,1254,141   <- worst-case latency and jitter in entire run
+\end{lstlisting}
+
+\subsection{Three-Run Comparison}
+
+\begin{table}[H]
+    \centering
+    \caption{Comparison of all three measurement runs}
+    \label{tab:comparison}
+    \begin{tabular}{lrrr}
+        \toprule
+        \textbf{Metric}
+            & \textbf{Run~1} (Apr)
+            & \textbf{Run~2} (Jun, RPi)
+            & \textbf{Run~3} (Jun, Zephyr) \\
+        \midrule
+        Frames           & 10{,}038 & 562     & 10{,}016 \\
+        Packet loss      & 0        & 0       & 0 \\
+        \midrule
+        Min latency ($\mu$s) & 1{,}141 & 1{,}140 & \textbf{1{,}093} \\
+        Max latency ($\mu$s) & 8{,}942 & 2{,}090 & \textbf{1{,}254} \\
+        Mean latency ($\mu$s)& 1{,}245 & 1{,}174 & \textbf{1{,}118} \\
+        \midrule
+        Max jitter ($\mu$s)  & 7{,}700 & 930 & \textbf{141} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Key observations:}
+\begin{itemize}
+    \item The \textbf{mean latency is similar across all three runs} (within 15\,\% of
+          each other).  This confirms that the average cost is dominated by the physical
+          medium: at 250\,kbps a standard 8-byte CAN frame occupies 111 bits
+          $= 444\,\mu$s; two transmissions (Bus~A + Bus~B) alone account for
+          $\approx 888\,\mu$s.  The remaining budget is Ethernet propagation and bridge
+          processing overhead.  The scheduler does not affect the average.
+
+    \item The \textbf{worst-case jitter falls dramatically} as non-determinism is
+          removed from the forwarding path.  Run~1 (untuned Linux) produced 7{,}700\,$\mu$s;
+          Run~2 (standard Linux, same Raspberry Pi) reduced this to 930\,$\mu$s; Run~3
+          (Zephyr RTOS, no Linux) reduced it to 141\,$\mu$s --- a \textbf{98.2\,\%}
+          reduction versus Run~1, and a \textbf{84.8\,\%} reduction versus Run~2.
+
+    \item \textbf{The Zephyr result is a bounded worst case}, not merely a statistical
+          improvement.  All 10{,}016 frames in Run~3 arrived within a 161\,$\mu$s window
+          with no latency spikes above 1.30\,ms.  This is the defining property of a
+          real-time system.
+\end{itemize}
+
+\subsection{Jitter Analysis and Real-Time Interpretation}
+\label{sec:jitter_analysis}
+
+\subsubsection{Impact on a Real-Time Control Loop}
+
+In a closed-loop control system, the CAN bridge sits in the feedback path between a
+sensor and an actuator controller.  If the bridge introduces worst-case jitter~$J$,
+the controller must either add a buffer of at least~$J$ to its deadline or risk a
+missed sample.  For a motor drive running at a 1\,ms control cycle:
+
+\begin{center}
+\begin{tabular}{llp{7cm}}
+    \toprule
+    \textbf{Run} & \textbf{Max jitter} & \textbf{Verdict for a 1\,ms control loop} \\
+    \midrule
+    Run~1 (Linux, untuned) & 7{,}700\,$\mu$s &
+        \textbf{Unusable.} Jitter is 7.7$\times$ the control period --- one spike
+        causes seven missed deadlines in a row. \\
+    Run~2 (Linux, RPi) & 930\,$\mu$s &
+        \textbf{Marginal.} Worst-case spike (2{,}090\,$\mu$s) exceeds one control
+        period; occasional missed deadline is unavoidable. \\
+    Run~3 (Zephyr) & 141\,$\mu$s &
+        \textbf{Acceptable.} Jitter is 14.1\,\% of the control period; 85.9\,\%
+        of the deadline budget remains for other processing. \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Distribution Characteristics}
+
+Run~2 (Linux RPi) exhibits a \textbf{bimodal distribution}: more than 99\,\% of frames
+cluster tightly around 1{,}170\,$\mu$s, while a tail of 5 frames (${<}$1\,\%) appears
+at 1{,}470--2{,}090\,$\mu$s.  This pattern is characteristic of Linux scheduler
+preemption: the bridge process runs normally until the kernel deschedules it to service
+another thread, IRQ handler, or softirq.  The tail events are effectively unbounded
+without a real-time kernel patch (\texttt{PREEMPT\_RT}).
+
+Run~3 (Zephyr) exhibits a \textbf{narrow unimodal distribution}: all 10{,}016 frames fall
+within 1{,}093--1{,}254\,$\mu$s, a 161\,$\mu$s window.  The observed 141\,$\mu$s of
+worst-case jitter reflects the aggregate of bounded, quantifiable effects:
+
+\begin{itemize}
+    \item CAN bus arbitration timing variation ($\pm$few\,$\mu$s at 250\,kbps)
+    \item Zephyr scheduler tick granularity and thread wake-up latency
+    \item LAN8720 PHY transmit FIFO depth variation ($\pm$few\,$\mu$s)
+    \item bxCAN peripheral FIFO access latency variation ($\pm$few\,$\mu$s)
+\end{itemize}
+
+Each source is bounded by hardware and RTOS configuration.  There is no mechanism in
+Zephyr that can produce an unbounded delay: interrupt latency is bounded by IRQ priority
+configuration, and the highest-priority ready thread is guaranteed to execute within a
+bounded number of kernel ticks.
+
+\subsubsection{Comparison with Automotive Requirements}
+
+For reference, ISO~11898-1 specifies a nominal bit time of 4\,$\mu$s at 250\,kbps.
+A standard 8-byte CAN frame (SOF + arbitration + control + data + CRC + ACK + EOF)
+occupies at most 111 bit times $= 444\,\mu$s.  Two such transmissions (Bus~A and Bus~B)
+therefore account for $\approx 888\,\mu$s of the round-trip budget.
+
+The Zephyr bridge adds only $\approx 230\,\mu$s of forwarding overhead above the
+two-bus minimum (1{,}118 - 888\,$\mu$s), with worst-case variation of 141\,$\mu$s.
+AUTOSAR~\cite{autosar} specifies end-to-end latency tolerances for CAN gateway paths
+typically in the 5--50\,ms range for body and comfort domain ECUs.  The Zephyr result
+is well within even the tightest automotive gateway requirements.
+
+\subsection{Latency Budget Analysis}
+
+The optimised mean round-trip of $\approx 1{,}118\,\mu$s can be decomposed
+into estimated contributions:
+
+\begin{center}
+\begin{tabular}{lr}
+    \toprule
+    \textbf{Stage} & \textbf{Estimated $\Delta t$} \\
+    \midrule
+    CAN Bus~A transmission (111-bit frame, 250\,kbps) & $\approx 444\,\mu$s \\
+    MCP2515 SPI receive + kernel SocketCAN path (RPi~1) & $\approx 150\,\mu$s \\
+    Open1722 ACF-CAN encapsulation + raw socket TX & $\approx 80\,\mu$s \\
+    100Base-TX Ethernet propagation (direct cable) & $< 1\,\mu$s \\
+    Open1722 decapsulation + SocketCAN TX (RPi~2) & $\approx 100\,\mu$s \\
+    CAN Bus~B transmission (111-bit frame, 250\,kbps) & $\approx 444\,\mu$s \\
+    STM32 CAN2 ISR entry + \texttt{get\_hw\_timestamp\_ticks()} & $< 1\,\mu$s \\
+    \midrule
+    \textbf{Estimated total} & $\approx 1{,}220\,\mu$s \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+The measured Run~2 mean of 1{,}174\,$\mu$s and the Run~3 (Zephyr) mean of 1{,}118\,$\mu$s
+are both close to the estimated minimum of 1{,}220\,$\mu$s, within 4 and 8\,\%
+respectively.  The slightly lower measured values indicate that the MCP2515, SocketCAN,
+and Open1722 processing estimates are conservative; in practice, DMA pipelining and
+hardware overlap reduce the effective per-stage contribution.  All fixed processing
+delays are independent of the scheduler policy.
+
+% ==========================================
+% 7. USER MANUAL
+% ==========================================
+\section{User Manual}
+\label{sec:manual}
+
+\subsection{Prerequisites}
+
+\begin{itemize}
+    \item Host machine with Docker and Docker Compose~\cite{docker} installed.
+    \item Zephyr SDK and \texttt{west} tool installed (see Zephyr Getting Started
+          Guide \cite{zephyr}).
+    \item Hardware wired as described in Section~\ref{sec:config1} (Configuration~1).
+    \item STM32 Nucleo-144 board connected to the host via USB (appears as
+          \texttt{/dev/ttyACM0}).
+\end{itemize}
+
+\subsection{Configuring the Raspberry Pi Bridge Services}
+\label{sec:rpi_setup}
+
+Both Raspberry Pi boards require two systemd services: one to bring up the SocketCAN
+interface at boot, and one to run the Open1722 bridge process.  The following steps
+must be performed on \textbf{each Pi} (adjusting \texttt{--dst-addr} for each board).
+
+\subsubsection*{Step 1 --- Create the CAN interface service}
+
+\begin{lstlisting}[caption={/etc/systemd/system/can1.service}]
+[Unit]
+Description=CAN1 SocketCAN interface
 After=network.target
 
 [Service]
 Type=oneshot
+RemainAfterExit=yes
 ExecStart=/sbin/ip link set can1 up type can bitrate 250000
 ExecStop=/sbin/ip link set can1 down
-RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
 \end{lstlisting}
 
-\noindent Subsequently, the Open1722 CAN-to-Ethernet Bridge software is managed via the following service file to bind the `can1` interface to the network stack:
+\texttt{Type=oneshot} with \texttt{RemainAfterExit=yes} means the service runs a
+single command and exits, but systemd still reports it as \emph{active} so that
+dependent services can use \texttt{After=can1.service} correctly.
 
-\begin{lstlisting}[caption={Open1722 Bridge Service (acf-can-bridge.service)}]
-sripiranavan@sripiranavan:/etc/systemd/system $ cat acf-can-bridge.service 
+\subsubsection*{Step 2 --- Create the Open1722 bridge service}
+
+\begin{lstlisting}[caption={/etc/systemd/system/acf-can-bridge.service}]
 [Unit]
-Description=Open1722 CAN to Ethernet Bridge (Pi1)
+Description=Open1722 ACF-CAN bridge
 After=can1.service network-online.target
 Wants=can1.service network-online.target
 
 [Service]
 Type=simple
-ExecStart=/sripiranavan/Open1722/build/examples/acf-can/linux/acf-can-bridge \
-  --dst-addr e4:5f:01:2a:87:70 \
+ExecStart=/home/pi/open1722/build/examples/acf-can-bridge \
+  --dst-addr <MAC-of-other-Pi> \
   -i eth0 \
   --canif can1
-
-Restart=always
+Restart=on-failure
 RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
 \end{lstlisting}
 
+Replace \texttt{<MAC-of-other-Pi>} with the Ethernet MAC address of the peer
+Raspberry Pi (obtained via \texttt{ip link show eth0} on that board).
+The three arguments to \texttt{acf-can-bridge} are:
 
-\section{Methodology}
-This section outlines the experimental setup, detailing the specific hardware components and software frameworks utilized to construct the CAN Latency Tester environment.
+\begin{itemize}
+    \item \texttt{--dst-addr} --- MAC address of the receiving Pi.
+    \item \texttt{-i eth0} --- Ethernet interface to transmit IEEE-1722 frames on.
+    \item \texttt{--canif can1} --- SocketCAN interface to read CAN frames from.
+\end{itemize}
 
-\subsection{System Components and Hardware Setup}
-The hardware architecture consists of multiple nodes configured to transmit, bridge, and monitor CAN frame latency. The complete bill of materials is detailed in Table~\ref{tab:hardware}.
+\texttt{After=can1.service} and \texttt{Wants=can1.service} are required.
+Without them, systemd may launch the bridge before the CAN interface is ready;
+the bridge opens \texttt{can1} immediately at startup and exits with
+\emph{No such device} if the interface does not yet exist.
 
-\begin{table}[h]
-    \centering
-    \caption{Hardware Components}
-    \label{tab:hardware}
-    \begin{tabular}{|l|c|p{7cm}|}
-        \hline
-        \textbf{Component} & \textbf{Quantity} & \textbf{Description / Role in Project} \\ \hline
-        Raspberry Pi 4 & 2 & Acts as the Linux host running the Open1722 CAN-to-Ethernet bridge application. \\ \hline
-        STM32F439ZI & 3 & Microcontroller development boards used as dedicated CAN nodes for traffic generation or timestamping. \\ \hline
-        CAN Transceiver & 4 & Interfaces the logic-level (TTL) signals from the controllers to the physical CAN bus differential voltages. \\ \hline
-        120\,$\Omega$ Resistor & 4 & Used for proper bus termination networks to prevent signal reflections across the nodes. \\ \hline
-        USB-CAN Adapter & 1 & Connected to a host machine for non-intrusive bus monitoring, packet sniffing, and verification. \\ \hline
-    \end{tabular}
-\end{table}
+\subsubsection*{Step 3 --- Reload, enable, and start}
 
-\subsection{Software Stack and Environment}
-To ensure predictable execution, real-time networking, and standardized encapsulation, the specific software frameworks listed in Table~\ref{tab:software} were deployed.
+\begin{lstlisting}[caption={Register and activate both services}]
+# Tell systemd to re-read the new unit files
+sudo systemctl daemon-reload
 
-\begin{table}[h]
-    \centering
-    \caption{Software Frameworks and Operating Systems}
-    \label{tab:software}
-    \begin{tabular}{|l|l|p{6.5cm}|}
-        \hline
-        \textbf{Software / OS} & \textbf{Version / Variant} & \textbf{Application Purpose} \\ \hline
-        Debian GNU/Linux & 13 (Trixie) & Operating system for the Raspberry Pi 4 hosts, managing network routing and systemd background services. \\ \hline
-        Zephyr OS & RTOS (Latest stable) & Real-Time Operating System running on the STM32 nodes to guarantee precise, deterministic CAN frame processing timelines. \\ \hline
-        Open1722 & Custom Build & High-performance audio/video bridging transport protocol engine used to encapsulate CAN traffic over Ethernet layers. \\ \hline
-    \end{tabular}
-\end{table}
+# Enable: create boot-time symlinks so both services start on every boot
+sudo systemctl enable can1.service
+sudo systemctl enable acf-can-bridge.service
 
+# Start immediately without rebooting
+sudo systemctl start can1.service
+sudo systemctl start acf-can-bridge.service
+\end{lstlisting}
 
-\subsection{Network Topology}
-% Tip: You can describe how they are connected here. 
-The nodes are physically linked over a shared bus terminated at both ends by the 120\,$\Omega$ resistors. The STM32 units running Zephyr OS interact natively with the CAN transceivers, while the Raspberry Pi 4 targets leverage the Open1722 infrastructure via systemd service units to bridge local data over the standard network interface setup.
+\subsubsection*{Step 4 --- Verify}
 
+\begin{lstlisting}[caption={Confirm both services are active}]
+systemctl status can1.service acf-can-bridge.service
+ip link show can1
+\end{lstlisting}
 
-\section{Results}
-Present the results obtained from the CAN Latency Tester.
+\texttt{can1.service} reports \texttt{active (exited)} --- correct for a
+\texttt{oneshot} service; the interface remains up even after the command exits.
+\texttt{acf-can-bridge.service} reports \texttt{active (running)}.
+\texttt{ip link show can1} should show the \texttt{UP} flag and
+\texttt{bitrate 250000}.  Repeat the same four steps on Raspberry Pi~2, changing
+only the \texttt{--dst-addr} value to point back to Pi~1's MAC address.
 
-\begin{figure}[h]
-    \centering
-    % \includegraphics[width=0.8\textwidth]{path/to/your/image.png}
-    \caption{A caption for the figure.}
-    \label{fig:example}
-\end{figure}
+\subsection{Building and Flashing the Firmware}
 
+\begin{lstlisting}[caption={Build and flash the measurement firmware}]
+# Navigate to the main pipeline application
+cd CAN_Latency_Tester/apps/main_pipeline
 
+# Pristine build for the Nucleo F439ZI board
+west build -p always -b nucleo_f439zi .
+
+# Flash via OpenOCD (board must be connected via USB)
+west flash
+\end{lstlisting}
+
+After flashing, the boot banner is printed over the USB-CDC serial port at 115\,200\,baud:
+
+\begin{lstlisting}
+==========================================
+    CAN Latency Tester - Initialized
+==========================================
+  Send Interval: 50 ms
+==========================================
+\end{lstlisting}
+
+\subsection{Starting the Monitoring Stack}
+
+\begin{lstlisting}[caption={Launch the Docker monitoring stack}]
+cd CAN_Latency_Tester/analyzer/stm32-can-monitor
+docker compose up -d
+\end{lstlisting}
+
+Open Grafana at \url{http://localhost:3000} and log in with \texttt{admin} / \texttt{admin}.
+The \emph{CAN Latency Dashboard} is pre-loaded.  Data will appear within 1--2~seconds of
+the first received CAN frame.
+
+\subsection{Running a Test}
+
+\begin{enumerate}
+    \item Ensure CAN Bus~A and Bus~B are physically connected and terminated with
+          $120\,\Omega$ resistors at both ends.
+    \item Verify that both Raspberry Pi Open1722 bridge services are running:
+          \texttt{systemctl status acf-can-bridge.service}.
+    \item \textbf{Press the blue USER BUTTON} (PC13) on the Nucleo board once.
+          The firmware begins transmitting at 20\,frames/sec.
+    \item Latency statistics appear live in Grafana.
+    \item \textbf{Press the USER BUTTON again} to pause transmission and print a full
+          statistics summary to the serial console.
+\end{enumerate}
+
+\subsection{Saving CSV Data}
+
+The Python analyser script in \texttt{analyzer/real\_time\_analyzer.py} connects to the
+serial port and writes a timestamped CSV file:
+
+\begin{lstlisting}[caption={Save latency data to CSV}]
+python3 analyzer/real_time_analyzer.py
+# Output: analyzer/latency_YYYYMMDD_HHMMSS.csv
+\end{lstlisting}
+
+The CSV columns are: \texttt{SEQ, TX\_TIME\_US, RX\_TIME\_US, LATENCY\_US, JITTER\_US}.
+
+\subsection{Troubleshooting}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{|l|X|}
+    \hline
+    \textbf{Symptom} & \textbf{Cause and Resolution} \\
+    \hline
+    No serial output after flash &
+        Check USB cable; verify \texttt{/dev/ttyACM0} exists (\texttt{ls /dev/ttyACM*}).
+        Try pressing the RESET button on the Nucleo board. \\
+    \hline
+    Grafana shows no data &
+        Run \texttt{docker compose logs telegraf} to check for port errors.
+        Verify \texttt{/dev/ttyACM0} is accessible from the container (check
+        \texttt{devices:} in \texttt{docker-compose.yml}). \\
+    \hline
+    InfluxDB field type conflict &
+        Delete and recreate the bucket:
+        \texttt{docker exec stm32\_influxdb influx bucket delete -{-}name can\_latency ...}
+        then \texttt{docker compose restart telegraf}. \\
+    \hline
+    High latency / packet loss &
+        Check CAN Bus termination resistors; verify both bridge services are
+        active; consider applying \texttt{SCHED\_FIFO} as in Section~\ref{sec:evolution}. \\
+    \hline
+    CAN Bus~A no traffic &
+        Verify \texttt{can1} is up: \texttt{ip link show can1}.  Ensure the
+        MCP2515 SPI clock is $\leq 1\,\text{MHz}$ in the Raspberry Pi
+        device tree overlay. \\
+    \hline
+\end{tabularx}
+\end{center}
+
+% ==========================================
+% 8. CONCLUSION
+% ==========================================
 \section{Conclusion}
-Summarize the findings and conclude the report.
+\label{sec:conclusion}
+
+This project designed and validated a self-contained CAN latency measurement framework
+based on the Open1722 IEEE-1722 AVTP stack, Zephyr RTOS, and a Dockerised real-time
+monitoring pipeline.
+
+Key findings:
+
+\begin{itemize}
+    \item The \textbf{single-board round-trip measurement} technique (CAN1~TX and
+          CAN2~RX on the same STM32) eliminates cross-node clock synchronisation
+          and provides $\approx 11\,\text{ns}$ measurement resolution at zero extra
+          hardware cost.
+
+    \item The \textbf{unoptimised Linux gateway} (Run~1) produced a max latency of
+          8{,}942\,$\mu$s and max jitter of 7{,}700\,$\mu$s --- seven times the mean
+          latency --- demonstrating that an untuned Linux process is unsuitable for
+          deterministic CAN forwarding.
+
+    \item A \textbf{follow-up Linux RPi measurement} (Run~2, June~18) recorded a max
+          jitter of 930\,$\mu$s across 562 frames, with 5 observable spikes up to
+          2{,}090\,$\mu$s.  This confirms that the Linux scheduler non-determinism
+          persists and produces unpredictable worst-case behaviour.
+
+    \item The \textbf{all-Zephyr STM32-to-STM32 bridge} (Run~3, June~18) produced a
+          max jitter of 141\,$\mu$s across 10{,}016 frames, with the entire distribution
+          fitting in a 161\,$\mu$s window and zero latency spikes above 1.30\,ms.  This
+          is a \textbf{84.8\,\%} reduction in worst-case jitter versus the Linux bridge
+          (Run~2) and a \textbf{98.2\,\%} reduction versus the baseline (Run~1).
+
+    \item The \textbf{mean latency is similar} across all three runs ($\approx$1{,}118--1{,}245\,$\mu$s),
+          confirming that the average round-trip cost is governed by the physical medium
+          (CAN bit times and Ethernet propagation) and is independent of the scheduler.
+          Real-time systems benefit from RTOS not because of lower average latency, but
+          because of a \emph{bounded worst case}.
+
+    \item The \textbf{Telegraf $\rightarrow$ InfluxDB $\rightarrow$ Grafana} monitoring
+          stack proved effective: a single \texttt{docker compose up -d} delivers a
+          live 10-panel latency dashboard within seconds of startup.
+\end{itemize}
+
+Future work includes extending the Zephyr measurement campaign to a larger frame count
+($>10{,}000$ frames) to statistically characterise the tail distribution, adding
+CAN-FD at 2\,Mbit/s and 8\,Mbit/s to test Open1722 under higher throughput, and
+applying \texttt{CONFIG\_SCHED\_FIFO} on the Zephyr bridge threads to further tighten
+the worst-case bound.
+
+% ==========================================
+% 9. USE OF AI
+% ==========================================
+\section{Use of AI}
+\label{sec:ai}
+
+In accordance with the Heilbronn University guidelines on the use of generative AI, the
+following discloses all AI-assisted elements of this work.
+
+\subsection*{AI Assistance Declared}
+
+\textbf{Tool:} Claude Sonnet 4.6 (\texttt{claude-sonnet-4-6}) by Anthropic, Inc. \\
+\textbf{Date of use:} June 17, 2026.
+
+The following tasks were performed with the assistance of the above model:
+
+\begin{enumerate}
+    \item \textbf{Report structure and writing:} The overall structure of this report
+          (section order, subsection breakdown, and phrasing of most paragraphs) was
+          produced by prompting Claude with the project's source code, CSV measurement
+          data, system diagrams, and the university's reporting requirements.  The
+          student verified all technical claims against the actual code and measurement
+          results.
+
+    \item \textbf{LaTeX formatting:} Table layouts, listing environments, and
+          mathematical formula typesetting were suggested by Claude and reviewed
+          by the student.
+
+    \item \textbf{Grammar and style:} Claude was used to improve the grammar and
+          readability of draft passages written in English by a non-native speaker.
+
+    \item \textbf{Brainstorming the project evolution narrative:} Claude was used
+          to help structure the ``Project Evolution'' section by organising notes about
+          what changed between runs into a coherent chronological account.
+\end{enumerate}
+
+\subsection*{AI Was Not Used For}
+
+The following were performed solely by the student without AI assistance:
+
+\begin{itemize}
+    \item All hardware assembly, wiring, and bench testing.
+    \item All Zephyr firmware code
+          (\texttt{main.c}, \texttt{can\_handler.c}, \texttt{stats.c},
+          \texttt{timestamp.c}, \texttt{button.c}).
+    \item Open1722 build, configuration, and systemd integration on Raspberry Pi.
+    \item Docker Compose and Telegraf/InfluxDB/Grafana configuration files.
+    \item Collection and interpretation of measurement data.
+    \item Identification of root causes and optimisation decisions.
+\end{itemize}
+
+The student is fully responsible for the substantive and formal accuracy of the content
+of this report and can explain every claim made herein.
+
+% ==========================================
+% APPENDICES
+% ==========================================
+\appendix
+
+\section{Monitoring Stack Configuration Files}
+\label{app:monitoring}
+
+\subsection{Telegraf Input Plugin (\texttt{telegraf.conf})}
+
+The \texttt{execd} input plugin spawns a shell that opens the STM32 USB-CDC serial
+port with \texttt{stty} and pipes only lines beginning with \texttt{CSV,} into
+Telegraf.  All other firmware output (boot banner, button events, statistics summaries)
+is silently dropped.  The plugin restarts automatically if the serial device disappears
+(e.g., after an STM32 reset).
+
+\begin{lstlisting}[caption={telegraf.conf --- execd input plugin for STM32 serial port}]
+[[inputs.execd]]
+  command = ["sh", "-c",
+    "stty -F /dev/ttyACM0 115200 raw -echo cs8 -cstopb -parenb &&
+     grep --line-buffered '^CSV,' /dev/ttyACM0"]
+  signal        = "none"
+  restart_delay = "10s"
+  data_format   = "csv"
+  name_override = "can_latency"
+  csv_header_row_count = 0
+  csv_skip_rows        = 0
+  csv_column_names = [
+    "_src","seq","tx_ticks","rx_ticks",
+    "latency_us","jitter_us",
+    "min_latency_us","max_latency_us",
+    "avg_latency_us","stddev_us",
+    "total_frames","lost_frames"
+  ]
+  csv_tag_columns        = ["_src"]
+  csv_measurement_column = ""
+
+[[outputs.influxdb_v2]]
+  urls         = ["http://influxdb:8086"]
+  token        = "$INFLUX_TOKEN"
+  organization = "stm32"
+  bucket       = "can_latency"
+\end{lstlisting}
+
+\subsection{Docker Compose Stack (\texttt{docker-compose.yml})}
+
+A single \texttt{docker compose up -d} starts all three services.  The \texttt{devices}
+key maps the STM32 USB-CDC serial port into the Telegraf container.  The Grafana
+dashboard is provisioned automatically from a JSON file mounted via a volume.
+
+\begin{lstlisting}[caption={docker-compose.yml --- three-service monitoring stack}]
+services:
+  influxdb:
+    image: influxdb:2.7
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE:     setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminpass
+      DOCKER_INFLUXDB_INIT_ORG:      stm32
+      DOCKER_INFLUXDB_INIT_BUCKET:   can_latency
+    ports: ["8086:8086"]
+    volumes: ["influxdb-data:/var/lib/influxdb2"]
+
+  telegraf:
+    image: telegraf:1.30
+    devices: ["/dev/ttyACM0:/dev/ttyACM0"]
+    volumes: ["./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro"]
+    depends_on: [influxdb]
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports: ["3000:3000"]
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on: [influxdb]
+
+volumes:
+  influxdb-data:
+  grafana-data:
+\end{lstlisting}
+
+\section{Firmware Kconfig Reference}
+\label{app:kconfig}
+
+The complete \texttt{prj.conf} for the measurement firmware
+(\texttt{apps/main\_pipeline/prj.conf}) is shown below.  Options that directly
+affect measurement accuracy or timing behaviour are annotated.
+
+\begin{lstlisting}[caption={apps/main\_pipeline/prj.conf --- full Kconfig listing}]
+# ---------- CAN ----------
+CONFIG_CAN=y
+CONFIG_CAN_INIT_PRIORITY=41   # raise above default; reduces ISR entry jitter
+
+# ---------- Logging ----------
+CONFIG_LOG=y
+CONFIG_LOG_MODE_DEFERRED=y    # flush in idle thread, not in ISR context
+CONFIG_LOG_BUFFER_SIZE=4096
+
+# ---------- Scheduler ----------
+CONFIG_SCHED_SCALABLE=y       # O(1) scheduler
+CONFIG_TIMESLICING=n          # disable periodic preemption of TX thread
+
+# ---------- USB-CDC serial ----------
+CONFIG_USB_DEVICE_STACK=y
+CONFIG_USB_CDC_ACM=y
+CONFIG_UART_CONSOLE=n
+CONFIG_USB_UART_CONSOLE=y
+CONFIG_UART_LINE_CTRL=y
+
+# ---------- Counter (TIM2 timestamp) ----------
+CONFIG_COUNTER=y
+
+# ---------- GPIO (USER BUTTON) ----------
+CONFIG_GPIO=y
+
+# ---------- Heap / Stacks ----------
+CONFIG_MAIN_STACK_SIZE=2048
+CONFIG_SYSTEM_WORKQUEUE_STACK_SIZE=1024
+\end{lstlisting}
+
+% ==========================================
+% BIBLIOGRAPHY
+% ==========================================
+\newpage
+\begin{thebibliography}{99}
+
+\bibitem{ieee1722}
+IEEE,
+``IEEE Standard for a Transport Protocol for Time-Sensitive Applications in Bridged Local
+Area Networks,''
+\textit{IEEE Std 1722-2016}, Aug.\ 2016.
+[Online]. Available: \url{https://ieeexplore.ieee.org/document/7782716}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{open1722}
+COVESA (Connected Vehicle Systems Alliance),
+``Open1722 --- Open-source IEEE 1722 AVTP Library,''
+GitHub repository, 2024.
+[Online]. Available: \url{https://github.com/COVESA/Open1722}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{zephyr}
+Zephyr Project,
+``Zephyr Project Documentation,'' Linux Foundation, 2024.
+[Online]. Available: \url{https://docs.zephyrproject.org}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{stm32rm}
+STMicroelectronics,
+``RM0090: STM32F405/415, STM32F407/417, STM32F427/437 and STM32F429/439 Advanced
+ARM\textsuperscript{\textregistered}-Based 32-bit MCUs Reference Manual,''
+Rev.~19, Mar.\ 2023.
+[Online]. Available:
+\url{https://www.st.com/resource/en/reference_manual/rm0090-stm32f405415-stm32f407417-stm32f427437-and-stm32f429439-advanced-armbased-32bit-mcus-stmicroelectronics.pdf}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{iso11898}
+ISO,
+``ISO 11898-1:2015 Road vehicles --- Controller area network (CAN) --- Part 1: Data
+link layer and physical signalling,''
+International Organization for Standardization, 2015.
+
+\bibitem{rpi4}
+Raspberry Pi Ltd,
+``Raspberry Pi 4 Model B Datasheet,''
+2023.
+[Online]. Available: \url{https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-datasheet.pdf}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{debian}
+The Debian Project,
+``Debian GNU/Linux 13 (Trixie) Release Notes,''
+2024.
+[Online]. Available: \url{https://www.debian.org/releases/trixie/}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{influxdb}
+InfluxData,
+``InfluxDB v2 Documentation,''
+2024.
+[Online]. Available: \url{https://docs.influxdata.com/influxdb/v2}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{telegraf}
+InfluxData,
+``Telegraf Plugin-Driven Server Agent Documentation,''
+2024.
+[Online]. Available: \url{https://docs.influxdata.com/telegraf}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{grafana}
+Grafana Labs,
+``Grafana Documentation,''
+2024.
+[Online]. Available: \url{https://grafana.com/docs/grafana/latest}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{autosar}
+AUTOSAR Consortium,
+``AUTOSAR Specification of End-to-End Communication Protection,''
+AUTOSAR Classic Platform, Release~R22-11, 2022.
+[Online]. Available: \url{https://www.autosar.org/standards/classic-platform}.
+[Accessed: Jun.\ 2026].
+
+\bibitem{docker}
+Docker, Inc.,
+``Docker Compose Documentation,''
+2024.
+[Online]. Available: \url{https://docs.docker.com/compose}.
+[Accessed: Jun.\ 2026].
+
+\end{thebibliography}
 
 \end{document}

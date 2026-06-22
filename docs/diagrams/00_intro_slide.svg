@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#161b27;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00b4d8;stop-opacity:0" />
+      <stop offset="30%" style="stop-color:#00b4d8;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#7b2ff7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7b2ff7;stop-opacity:0" />
+    </linearGradient>
+    <linearGradient id="canBusGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00b4d8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0077b6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bridgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d2137;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="stmGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a3a2a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d2018;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softShadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#00b4d8"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4caf50"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ff8c42"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid pattern -->
+  <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+    <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#ffffff" stroke-width="0.3" opacity="0.04"/>
+  </pattern>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="1920" height="4" fill="url(#accentLine)"/>
+
+  <!-- ─── HEADER ─── -->
+  <!-- University label -->
+  <text x="960" y="58" font-family="'Segoe UI', Arial, sans-serif" font-size="22" fill="#7a8aa0" text-anchor="middle" letter-spacing="3">
+    HEILBRONN UNIVERSITY · REAL-TIME SYSTEMS COURSE · 2026
+  </text>
+
+  <!-- Main title -->
+  <text x="960" y="130" font-family="'Segoe UI', Arial, sans-serif" font-size="68" font-weight="700" fill="#e8edf5" text-anchor="middle" filter="url(#glow)" letter-spacing="1">
+    Open1722 CAN Latency Tester
+  </text>
+
+  <!-- Subtitle -->
+  <text x="960" y="182" font-family="'Segoe UI', Arial, sans-serif" font-size="30" fill="#8ab4cc" text-anchor="middle" letter-spacing="1">
+    Linux (Raspberry Pi)  vs  Zephyr RTOS (STM32)
+  </text>
+
+  <!-- Divider line -->
+  <line x1="400" y1="208" x2="1520" y2="208" stroke="url(#accentLine)" stroke-width="1.5"/>
+
+  <!-- ─── CENTRAL QUESTION BOX ─── -->
+  <rect x="300" y="230" width="1320" height="160" rx="12" ry="12"
+        fill="#111827" stroke="#00b4d8" stroke-width="1.5" filter="url(#softShadow)"/>
+  <rect x="300" y="230" width="6" height="160" rx="3" ry="3" fill="#00b4d8"/>
+
+  <text x="960" y="280" font-family="'Segoe UI', Arial, sans-serif" font-size="24" fill="#94a3b8" text-anchor="middle" font-style="italic">
+    The question:
+  </text>
+  <text x="960" y="318" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="600" fill="#e2e8f0" text-anchor="middle">
+    How long does a CAN message take to cross an Ethernet bridge —
+  </text>
+  <text x="960" y="354" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="600" fill="#e2e8f0" text-anchor="middle">
+    and does it matter if that bridge runs Linux or a real-time OS?
+  </text>
+
+  <!-- ─── PIPELINE DIAGRAM ─── -->
+  <!-- STM32 Board (left) -->
+  <rect x="120" y="440" width="220" height="220" rx="14" ry="14" fill="url(#stmGrad)" stroke="#4ade80" stroke-width="2" filter="url(#softShadow)"/>
+  <text x="230" y="476" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#4ade80" text-anchor="middle" letter-spacing="2">STM32 F439ZI</text>
+  <text x="230" y="497" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#64748b" text-anchor="middle">Zephyr RTOS</text>
+  <!-- chip icon placeholder -->
+  <rect x="175" y="515" width="110" height="80" rx="6" fill="#0d2018" stroke="#2d5a3d" stroke-width="1.5"/>
+  <text x="230" y="545" font-family="monospace" font-size="11" fill="#4ade80" text-anchor="middle">CAN1 TX</text>
+  <text x="230" y="562" font-family="monospace" font-size="10" fill="#4ade80" text-anchor="middle">→ sends frame</text>
+  <line x1="210" y1="580" x2="250" y2="580" stroke="#4ade80" stroke-width="1" opacity="0.4"/>
+  <text x="230" y="598" font-family="monospace" font-size="11" fill="#00b4d8" text-anchor="middle">CAN2 RX</text>
+  <text x="230" y="615" font-family="monospace" font-size="10" fill="#00b4d8" text-anchor="middle">← receives frame</text>
+  <!-- Badge: Measurement Node -->
+  <rect x="148" y="670" width="164" height="26" rx="13" fill="#0d2018" stroke="#4ade80" stroke-width="1"/>
+  <text x="230" y="687" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#4ade80" text-anchor="middle" letter-spacing="1">MEASUREMENT NODE</text>
+
+  <!-- CAN Bus A label + arrow -->
+  <text x="430" y="525" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">CAN Bus A</text>
+  <text x="430" y="544" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">250 kbps</text>
+  <line x1="340" y1="550" x2="520" y2="550" stroke="#00b4d8" stroke-width="2.5" stroke-dasharray="8,4" marker-end="url(#arrowBlue)"/>
+
+  <!-- Bridge Box -->
+  <rect x="540" y="420" width="840" height="260" rx="16" ry="16" fill="#0d1929" stroke="#1e3a5f" stroke-width="1.5" filter="url(#softShadow)"/>
+  <text x="960" y="456" font-family="'Segoe UI', Arial, sans-serif" font-size="16" fill="#4a6fa5" text-anchor="middle" letter-spacing="3">ETHERNET BRIDGE</text>
+
+  <!-- Linux bridge side -->
+  <rect x="565" y="470" width="340" height="180" rx="10" ry="10" fill="#0a1a0a" stroke="#4ade80" stroke-width="1.5"/>
+  <text x="735" y="498" font-family="'Segoe UI', Arial, sans-serif" font-size="17" font-weight="600" fill="#4ade80" text-anchor="middle">LINUX</text>
+  <text x="735" y="517" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#4a6a4a" text-anchor="middle">Raspberry Pi 1 + Pi 2</text>
+  <rect x="590" y="530" width="290" height="50" rx="6" fill="#0d2018" stroke="#2d5a3d" stroke-width="1"/>
+  <text x="735" y="551" font-family="monospace" font-size="12" fill="#4ade80" text-anchor="middle">SocketCAN + Open1722</text>
+  <text x="735" y="568" font-family="monospace" font-size="11" fill="#64748b" text-anchor="middle">acf-can-bridge service</text>
+  <text x="735" y="598" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#ef4444" text-anchor="middle">⚠ Non-deterministic scheduler</text>
+  <text x="735" y="618" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">SCHED_FIFO + CPU pinning needed</text>
+  <text x="735" y="638" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">EtherType 0x22F0 (AVTP / Layer 2)</text>
+
+  <!-- VS divider -->
+  <text x="960" y="565" font-family="'Segoe UI', Arial, sans-serif" font-size="22" font-weight="700" fill="#374151" text-anchor="middle">VS</text>
+
+  <!-- Zephyr bridge side -->
+  <rect x="1015" y="470" width="340" height="180" rx="10" ry="10" fill="#0a0d1a" stroke="#7b2ff7" stroke-width="1.5"/>
+  <text x="1185" y="498" font-family="'Segoe UI', Arial, sans-serif" font-size="17" font-weight="600" fill="#a78bfa" text-anchor="middle">ZEPHYR RTOS</text>
+  <text x="1185" y="517" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#5b4a7a" text-anchor="middle">STM32 Board 2 + Board 3</text>
+  <rect x="1040" y="530" width="290" height="50" rx="6" fill="#0d0a1a" stroke="#3d2a5a" stroke-width="1"/>
+  <text x="1185" y="551" font-family="monospace" font-size="12" fill="#a78bfa" text-anchor="middle">bxCAN + Open1722</text>
+  <text x="1185" y="568" font-family="monospace" font-size="11" fill="#64748b" text-anchor="middle">CAN MSGQ + raw socket</text>
+  <text x="1185" y="598" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#4ade80" text-anchor="middle">✓ Bounded interrupt latency</text>
+  <text x="1185" y="618" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">Hard real-time guarantees</text>
+  <text x="1185" y="638" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">EtherType 0x22F0 (AVTP / Layer 2)</text>
+
+  <!-- CAN Bus B label + arrow -->
+  <text x="1490" y="525" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">CAN Bus B</text>
+  <text x="1490" y="544" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">250 kbps</text>
+  <line x1="1400" y1="550" x2="1580" y2="550" stroke="#4ade80" stroke-width="2.5" stroke-dasharray="8,4" marker-end="url(#arrowGreen)"/>
+
+  <!-- STM32 Board (right — same chip) -->
+  <rect x="1580" y="440" width="220" height="220" rx="14" ry="14" fill="url(#stmGrad)" stroke="#4ade80" stroke-width="2" filter="url(#softShadow)"/>
+  <text x="1690" y="476" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#4ade80" text-anchor="middle" letter-spacing="2">STM32 F439ZI</text>
+  <text x="1690" y="497" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#64748b" text-anchor="middle">same board</text>
+  <rect x="1635" y="515" width="110" height="80" rx="6" fill="#0d2018" stroke="#2d5a3d" stroke-width="1.5"/>
+  <text x="1690" y="548" font-family="monospace" font-size="11" fill="#00b4d8" text-anchor="middle">CAN2 RX</text>
+  <text x="1690" y="568" font-family="monospace" font-size="10" fill="#64748b" text-anchor="middle">records t₁</text>
+  <text x="1690" y="595" font-family="monospace" font-size="12" fill="#fbbf24" text-anchor="middle">Δt = t₁ − t₀</text>
+  <!-- Badge: same clock, no sync -->
+  <rect x="1608" y="670" width="164" height="26" rx="13" fill="#0d2018" stroke="#fbbf24" stroke-width="1"/>
+  <text x="1690" y="687" font-family="'Segoe UI', Arial, sans-serif" font-size="12" fill="#fbbf24" text-anchor="middle">NO CLOCK SYNC NEEDED</text>
+
+  <!-- Return arrow label -->
+  <text x="960" y="728" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="#4a5568" text-anchor="middle">Nucleo-144 board — both timestamps on the same chip · no clock sync needed</text>
+
+  <!-- ─── FOOTER ─── -->
+  <line x1="200" y1="780" x2="1720" y2="780" stroke="#1e2a3a" stroke-width="1"/>
+
+  <!-- Protocol badges -->
+  <rect x="480" y="800" width="200" height="36" rx="18" fill="#111827" stroke="#00b4d8" stroke-width="1"/>
+  <text x="580" y="823" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#00b4d8" text-anchor="middle" letter-spacing="1">IEEE 1722 / AVTP</text>
+
+  <rect x="710" y="800" width="160" height="36" rx="18" fill="#111827" stroke="#4a5568" stroke-width="1"/>
+  <text x="790" y="823" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#64748b" text-anchor="middle" letter-spacing="1">EtherType 0x22F0</text>
+
+  <rect x="900" y="800" width="120" height="36" rx="18" fill="#111827" stroke="#4a5568" stroke-width="1"/>
+  <text x="960" y="823" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#64748b" text-anchor="middle" letter-spacing="1">Open1722</text>
+
+  <rect x="1050" y="800" width="130" height="36" rx="18" fill="#111827" stroke="#4a5568" stroke-width="1"/>
+  <text x="1115" y="823" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#64748b" text-anchor="middle" letter-spacing="1">SocketCAN</text>
+
+  <rect x="1210" y="800" width="220" height="36" rx="18" fill="#111827" stroke="#4a5568" stroke-width="1"/>
+  <text x="1320" y="823" font-family="'Segoe UI', Arial, sans-serif" font-size="14" fill="#64748b" text-anchor="middle" letter-spacing="1">Nucleo-144 (STM32F439ZI)</text>
+
+  <!-- Bottom tagline -->
+  <text x="960" y="910" font-family="'Segoe UI', Arial, sans-serif" font-size="16" fill="#374151" text-anchor="middle" letter-spacing="2">
+    SELF-CONTAINED ROUND-TRIP MEASUREMENT · NO CLOCK SYNCHRONIZATION · NO EXTERNAL EQUIPMENT
+  </text>
+
+  <!-- Bottom accent bar -->
+  <rect x="0" y="1076" width="1920" height="4" fill="url(#accentLine)"/>
+</svg>

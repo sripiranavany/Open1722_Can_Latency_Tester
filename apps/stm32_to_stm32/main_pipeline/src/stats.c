@@ -48,7 +48,11 @@ uint32_t stats_record(uint32_t latency_us, uint32_t rx_seq_num) {
         if (rx_seq_num != expected_seq) {
             uint32_t lost = rx_seq_num - expected_seq;
             stats.lost_packets += lost;
-            printk("Packet loss detected: expected seq %u, got %u, lost %u\n", expected_seq, rx_seq_num, lost);
+            /* only print for small gaps — large gaps (e.g. Pi in loop) flood the UART */
+            if (lost <= 10) {
+                printk("Packet loss: seq gap %u→%u (lost %u)\n",
+                       expected_seq, rx_seq_num, lost);
+            }
         }
     }
     stats.last_rx_seq = rx_seq_num;

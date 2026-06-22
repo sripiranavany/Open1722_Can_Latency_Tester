@@ -1,0 +1,201 @@
+@startuml STM32 to STM32 Full Zephyr Pipeline Presentation
+
+title <size:30><b>STM32 → STM32 → STM32   CAN Latency Pipeline   (All Zephyr RTOS)</b></size>
+
+scale 1920x1080
+
+skinparam componentStyle rectangle
+skinparam defaultFontName Monospaced
+skinparam defaultFontSize 15
+skinparam backgroundColor #0D1117
+skinparam ArrowColor #778899
+skinparam ArrowThickness 3
+skinparam ArrowFontSize 13
+skinparam ArrowFontStyle bold
+skinparam ArrowFontColor #AABBCC
+skinparam shadowing true
+skinparam padding 18
+skinparam nodesep 80
+skinparam ranksep 55
+
+skinparam title {
+    FontSize 28
+    FontColor #E0E0FF
+    FontStyle bold
+    BackgroundColor #0D1117
+    BorderColor #0D1117
+}
+
+skinparam package {
+    BackgroundColor<<stm32>>   #0F1F3D
+    BorderColor<<stm32>>       #4A6FBF
+    BorderThickness<<stm32>>   4
+    FontColor<<stm32>>         #7EB6FF
+    FontSize<<stm32>>          17
+    FontStyle<<stm32>>         bold
+
+    BackgroundColor<<bus>>     #1C1200
+    BorderColor<<bus>>         #C87800
+    BorderThickness<<bus>>     3
+    FontColor<<bus>>           #FFA500
+    FontSize<<bus>>            14
+
+    BackgroundColor<<eth>>     #00141C
+    BorderColor<<eth>>         #0096CC
+    BorderThickness<<eth>>     3
+    FontColor<<eth>>           #00CCFF
+    FontSize<<eth>>            14
+}
+
+skinparam component {
+    BackgroundColor<<stm32>>   #1A2E55
+    BorderColor<<stm32>>       #4A6FBF
+    BorderThickness<<stm32>>   2
+    FontColor<<stm32>>         #C0D8FF
+    FontSize<<stm32>>          14
+
+    BackgroundColor<<ts>>      #3D0000
+    BorderColor<<ts>>          #FF3030
+    BorderThickness<<ts>>      2
+    FontColor<<ts>>            #FF7070
+    FontSize<<ts>>             15
+
+    BackgroundColor<<bus>>     #2B1A00
+    BorderColor<<bus>>         #C87800
+    BorderThickness<<bus>>     2
+    FontColor<<bus>>           #FFA040
+    FontSize<<bus>>            14
+
+    BackgroundColor<<eth>>     #001E2B
+    BorderColor<<eth>>         #0096CC
+    BorderThickness<<eth>>     2
+    FontColor<<eth>>           #40C8FF
+    FontSize<<eth>>            14
+
+    BackgroundColor<<phy>>     #001430
+    BorderColor<<phy>>         #2266CC
+    BorderThickness<<phy>>     2
+    FontColor<<phy>>           #80AAFF
+    FontSize<<phy>>            13
+
+    BackgroundColor<<xcvr>>    #200030
+    BorderColor<<xcvr>>        #9933CC
+    BorderThickness<<xcvr>>    2
+    FontColor<<xcvr>>          #CC88FF
+    FontSize<<xcvr>>           13
+}
+
+' =========================================================
+'  THREE BOARDS  —  forced to the same horizontal rank
+' =========================================================
+
+together {
+
+    ' ── STM32 #1  (Source & Sink) ─────────────────────────
+    package "  STM32 #1  \n  NUCLEO-F439ZI  \n  Zephyr RTOS  \n  Source  &  Sink  " <<stm32>> {
+
+        component "  CAN1  TX  \n  ──────────────  \n  t₀ : frame sent  \n  @ 250 kbps  \n  " as STM1_TX <<ts>>
+
+        component "  TJA1050  \n  CAN Transceiver  \n  ──────────────  \n  CANH / CANL  \n  (Bus A side)  " as XCVR1A <<xcvr>>
+
+        component "  TJA1050  \n  CAN Transceiver  \n  ──────────────  \n  CANH / CANL  \n  (Bus B side)  " as XCVR1B <<xcvr>>
+
+        component "  CAN2  RX  \n  ──────────────  \n  t₃ : frame received  \n  Δt  =  t₃ − t₀  \n  " as STM1_RX <<ts>>
+    }
+
+    ' ── STM32 #2  (CAN → Ethernet Gateway) ───────────────
+    package "  STM32 #2  \n  NUCLEO-F439ZI  \n  Zephyr RTOS  \n  CAN  →  Ethernet  " <<stm32>> {
+
+        component "  TJA1050  \n  CAN Transceiver  \n  ──────────────  \n  CANH / CANL  \n  (Bus A side)  " as XCVR2 <<xcvr>>
+
+        component "  CAN1  RX  \n  ──────────────  \n  t₁ : frame ingress  " as STM2_CAN <<stm32>>
+
+        component "  Zephyr  open1722  \n  ──────────────  \n  Encapsulate CAN  \n  into  AVTP / IEEE-1722  " as STM2_ENC <<stm32>>
+
+        component "  Ethernet  TX  \n  ──────────────  \n  via  LAN8720A  PHY  \n  RMII  interface  " as STM2_ETH <<stm32>>
+
+        component "  LAN8720A  \n  Ethernet  PHY  \n  ──────────────  \n  100BASE-TX  \n  RMII  " as PHY2 <<phy>>
+    }
+
+    ' ── STM32 #3  (Ethernet → CAN Gateway) ───────────────
+    package "  STM32 #3  \n  NUCLEO-F439ZI  \n  Zephyr RTOS  \n  Ethernet  →  CAN  " <<stm32>> {
+
+        component "  LAN8720A  \n  Ethernet  PHY  \n  ──────────────  \n  100BASE-TX  \n  RMII  " as PHY3 <<phy>>
+
+        component "  Ethernet  RX  \n  ──────────────  \n  via  LAN8720A  PHY  \n  RMII  interface  " as STM3_ETH <<stm32>>
+
+        component "  Zephyr  open1722  \n  ──────────────  \n  Decapsulate  AVTP  \n  extract  CAN  frame  " as STM3_DEC <<stm32>>
+
+        component "  CAN2  TX  \n  ──────────────  \n  t₂ : frame egress  " as STM3_CAN <<stm32>>
+
+        component "  TJA1050  \n  CAN Transceiver  \n  ──────────────  \n  CANH / CANL  \n  (Bus B side)  " as XCVR3 <<xcvr>>
+    }
+
+}
+
+' =========================================================
+'  BUSES / LINKS  (separate from the boards)
+' =========================================================
+
+component "  CAN Bus A  \n  ══════════════  \n  CANH / CANL  twisted pair  \n  250 kbps   ISO 11898  \n  " as CANA <<bus>>
+
+component "  Ethernet  Direct  Cable  \n  ══════════════  \n  IEEE 802.3  /  IEEE 1722  \n  AVTP  stream  100 Mbps  \n  " as ETH <<eth>>
+
+component "  CAN Bus B  \n  ══════════════  \n  CANH / CANL  twisted pair  \n  250 kbps   ISO 11898  \n  " as CANB <<bus>>
+
+' =========================================================
+'  SIGNAL FLOW
+' =========================================================
+
+STM1_TX   -->  XCVR1A   :  <b>CAN frame  t₀</b>
+XCVR1A    -->  CANA
+CANA      -->  XCVR2
+XCVR2     -->  STM2_CAN :  <b>Bus A  in</b>
+STM2_CAN  -->  STM2_ENC
+STM2_ENC  -->  STM2_ETH
+STM2_ETH  -->  PHY2
+PHY2      -->  ETH      :  <b>AVTP  packet</b>
+ETH       -->  PHY3
+PHY3      -->  STM3_ETH
+STM3_ETH  -->  STM3_DEC
+STM3_DEC  -->  STM3_CAN
+STM3_CAN  -->  XCVR3    :  <b>t₂  egress</b>
+XCVR3     -->  CANB
+CANB      -->  XCVR1B
+XCVR1B    -->  STM1_RX  :  <b>CAN frame  t₃</b>
+
+' =========================================================
+'  NOTES
+' =========================================================
+
+note right of STM1_TX
+    <b>Timestamp  t₀</b>
+    CAN TX  callback  (Zephyr)
+    or  GPIO  toggle  capture
+    Hardware-level  precision
+end note
+
+note right of STM1_RX
+    <b>Round-Trip  Latency</b>
+    <b>Δt  =  t₃  −  t₀</b>
+    Pure  RTOS  —  no  Linux  jitter
+    Target:  30–50 %  reduction
+    vs.  Raspberry Pi  baseline
+end note
+
+note left of STM2_ENC
+    <b>Hardware  BOM</b>
+    3 ×  STM32F439ZI
+    2 ×  LAN8720A  PHY
+    4 ×  TJA1050  CAN  XCVR
+    Zephyr  RTOS  +  open1722
+end note
+
+note right of ETH
+    <b>IEEE  1722  /  AVTP</b>
+    Direct  cable  (no  switch)
+    Sub-millisecond  PHY  latency
+    Deterministic  delivery
+end note
+
+@enduml

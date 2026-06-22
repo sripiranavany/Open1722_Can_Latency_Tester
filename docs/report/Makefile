@@ -14,6 +14,7 @@ all: $(PDF)
 
 $(PDF): $(SRC)
 	$(LATEX) $(SRC)
+	$(LATEX) $(SRC)
 
 # Clean up generated files
 clean:
